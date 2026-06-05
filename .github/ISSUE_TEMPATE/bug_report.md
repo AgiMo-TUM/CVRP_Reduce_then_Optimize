@@ -1,33 +1,33 @@
 ---
 name: "🐛 Bug Report"
-about: Melde einen Fehler, damit wir ihn beheben können.
+about: Report a bug to help us improve the project.
 title: '[Bug]: '
 labels: bug, triage
 assignees: ''
 ---
 
-## 📝 Beschreibung
-Eine klare und prägnante Beschreibung des Fehlers. Was genau passiert?
+## 📝 Description
+A clear and concise description of what the bug is. What exactly is happening?
 
-## 👣 Schritte zur Reproduktion
-Bitte liste die genauen Schritte auf, um den Fehler zu reproduzieren:
-1. Gehe zu '...'
-2. Klicke auf '...'
-3. Scrolle runter zu '...'
-4. Fehler wird angezeigt
+## 👣 Steps to Reproduce
+Please list the exact steps to reproduce the behavior:
+1. Go to '...'
+2. Click on '...'
+3. Scroll down to '...'
+4. Error occurs
 
-## 🎯 Erwartetes Verhalten
-Eine klare Beschreibung dessen, was stattdessen hätte passieren sollen.
+## 🎯 Expected Behavior
+A clear and concise description of what you expected to happen.
 
-## 📸 Screenshots / Code-Snippets
-Falls vorhanden, füge hier bitte Screenshots, Fehlermeldungen oder relevanten Code ein (nutze dafür Backticks für Code-Blöcke).
+## 📸 Screenshots / Code Snippets
+If applicable, add screenshots, console logs, or relevant code snippets to help explain your problem.
 
-## 💻 Umgebung & Versionen
-- **Betriebssystem:** [z. B. Windows 11, macOS Sonoma]
-- **Browser / Laufzeit:** [z. B. Chrome v120, Node.js v20]
-- **App-Version / Commit-Hash:** [z. B. v1.2.3 oder main-branch]
+## 💻 Environment & Versions
+- **OS:** [e.g. Windows 11, macOS Sequoia]
+- **Browser / Runtime:** [e.g. Chrome v135, Node.js v24]
+- **App Version / Commit Hash:** [e.g. v1.2.3 or main branch]
 
-## ⬜ Vorab-Prüfungen
-*Bitte kreuze Zutreffendes an, indem du ein `x` in die Klammern setzt: `[x]`*
-- [ ] Ich habe in den existierenden Issues nach Doubletten gesucht.
-- [ ] Ich verwende die neueste Version des Projekts.
+## ⬜ Pre-flight Checklist
+*Please check the applicable boxes by putting an `x` inside the brackets: `[x]`*
+- [ ] I have searched the existing issues to make sure this is not a duplicate.
+- [ ] I am using the latest version of the project.
