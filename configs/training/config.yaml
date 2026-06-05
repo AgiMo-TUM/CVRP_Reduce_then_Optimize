@@ -1,0 +1,52 @@
+defaults:
+  - model: linear_logreg
+
+data_path: "data/samples/agarwal-aneja_15_15_B20_Theta0.2_BF1.0"
+validation_data_path: "data/X_instances"
+num_samples: null
+validation_num_samples: null
+var_size_samples: False
+train_batch_size: 32
+val_batch_size: 128
+max_num_epochs: 500
+learning_rate: 0.001
+momentum: 0.9
+weight_decay: 0
+lr_decay: True
+patience: 5
+lr_decay_factor: 0.1
+early_stopping: 15
+opt_threshold: 0.00001
+monitoring_kpi: "validation_loss"
+# out_dir: "models/sol_edge_predictor"
+##Changes
+out_dir: "models/sol_arc_predictor"
+experiment_name : "test_1"
+##End changes
+log_dir: "logs"
+use_gpu: True
+seed: 0
+cross_validate: False
+test_split: 0.2
+
+# === Project / problem settings ===
+project_name: "cvrp_reduce_then_optimize"
+is_time_windows: False        # True -> CVRPTW, False -> CVRP
+directed: False               # True -> directed GNN forward, False -> undirected forward
+wandb_use: True               # True -> log to W&B; False -> skip wandb.login()/init/log entirely
+
+# === Training-side reduction setting (only top_k_train stays here) ===
+top_k_train: 200              # top-k arcs per instance during training reduction
+
+# === Legacy keys kept for back-compat with 02_generate_samples.py main() ===
+# These names are re-used by sample-generation slicing logic; not actual ML hyperparams.
+regul_lambda: 1               # HGS time slice id used inside main()
+max_iterations_FW: null       # end-index for slice (null = all files)
+
+# === Sample-generation I/O paths (overridable from CLI) ===
+samples_input_dir: "data/samples_Munich_100"           # source folder consumed by main()
+samples_output_dir: "data/samples_generated"           # destination folder (auto-created)
+
+# Decoder-side keys (decoder, pyvrp_version, heu_time, threshold_type,
+# top_k_eval, size_threshold, probability_threshold, completion_heu_time)
+# are owned by configs/benchmarking/config.yaml.
