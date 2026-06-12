@@ -626,7 +626,7 @@ def generate_CVRP_LIB_instances(path, nb_clients, seed, nb_instances = 100) -> N
         # change '02d' if you need more than two digits (e.g. with '03d' you can index from 001 to 999)
         instanceName = 'sample_'+str(n)+'_'+str(rootPos)+str(custPos)+str(demandType)+'_'+ format(instanceID, '02d')
 
-        pathToWrite = path +instanceName+'.vrp'
+        pathToWrite = path + "/" +instanceName+'.vrp'
 
         depot = (-1,-1) # depot position
         S = set() # set of coordinates for the customers
@@ -852,15 +852,21 @@ def split_dataset(
 
 @hydra.main(
     version_base=None,
-    config_path="configs/training",
+    config_path="configs/data_generation",
     config_name="config",
 )
 
 
-def main(training_config: DictConfig) -> None:
+def main(data_generation_config: DictConfig) -> None:
     """Hydra entry point: dispatches to the configured sample-generation routine."""
 
-    os.makedirs(training_config.samples_output_dir, exist_ok=True)
+
+    data_path = data_generation_config.data_path
+    seed = data_generation_config.seed
+    nb_clients = data_generation_config.nb_clients
+    nb_instances = data_generation_config.nb_instances
+
+    generate_CVRP_LIB_instances(data_path, nb_clients, seed, nb_instances)
 
 
 # --- Main: generate a few samples ---

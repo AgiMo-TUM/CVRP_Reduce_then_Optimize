@@ -1,0 +1,4 @@
+data_path: "data/default_folder"
+seed: 0
+nb_clients: 20
+nb_instances: 10

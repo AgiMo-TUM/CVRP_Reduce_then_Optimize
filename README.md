@@ -6,7 +6,7 @@ This repository contains the code to train a GNN-based arc predictor and run a r
 ### Poetry
 #### 1. Install Poetry
 ```shell
-pipx install poetry
+pip install poetry
 ```
 or [offical installer Guide](https://github.com/python-poetry/install.python-poetry.org)
 and check if the installation worked:
@@ -19,12 +19,18 @@ Check if the standard python version on your local computer is the same defined 
 python --version
 ```
 If not check if you have a different python version installed.
+For linux:
 ```shell
 ls -l $(which -a python python3) 2>/dev/null | grep -o 'python[0-9.]*' | sort -u
 ```
+For windows:
+```shell
+py --list-paths
+```
+
 If yes, you can use:
 ```shell
-poetry env use python3.12
+poetry env use <path_to_python_version>
 ```
 
 If not install the python version defined in `pyproject.toml`.
@@ -57,13 +63,12 @@ Example:
 ```bash
 # Re-solve a slice of existing CVRP samples with a shorter HGS budget
 python scripts/01_data/02_generate_samples.py \
-  --config-path ../../configs/training \
+  --config-path ../../configs/data_generation \
   --config-name config \
-  samples_input_dir=data/samples_Munich_100 \
-  samples_output_dir=data/samples_generated \
-  regul_lambda=1 \
-  num_samples=0 \
-  max_iterations_FW=5
+  data_path="data/default_folder" \
+  nb_clients=30 \
+  seed=1 \
+  nb_instances=10 
 ```
 
 I/O paths come from `configs/training/config.yaml` (`samples_input_dir`, `samples_output_dir`). The slice is controlled by `num_samples` (start) and `max_iterations_FW` (end); `regul_lambda` is the HGS time budget in seconds.
