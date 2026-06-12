@@ -1,0 +1,25 @@
+[project]
+name = "cvrp-reduce-then-optimize"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "Baptiste Vert",email="baptiste.vert@tum.de"},
+    {name = "Ben Kostka",email = "mail@ben-kostka.de"}
+]
+readme = "README.md"
+requires-python = ">=3.12, <3.15"
+dependencies = [
+    "torch (>=2.12.0,<3.0.0)",
+    "torch-geometric (>=2.8.0,<3.0.0)",
+    "numpy (>=2.4.6,<3.0.0)",
+    "pyvrp (>=0.13.4,<0.14.0)",
+    "wandb (>=0.27.2,<0.28.0)",
+    "scikit-learn (>=1.9.0,<2.0.0)"
+]
+
+[tool.poetry]
+package-mode = false
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"

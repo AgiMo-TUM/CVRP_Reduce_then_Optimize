@@ -3,7 +3,47 @@
 This repository contains the code to train a GNN-based arc predictor and run a reduce-then-optimize pipeline for CVRP (and the time-windowed variant CVRPTW). The decoder backend is either Gurobi (exact) or HGS via PyVRP.
 
 ## Local Setup
+### Poetry
+#### 1. Install Poetry
+```shell
+pipx install poetry
+```
+or [offical installer Guide](https://github.com/python-poetry/install.python-poetry.org)
+and check if the installation worked:
+```shell
+poetry --version
+```
+#### 2. Check local python version
+Check if the standard python version on your local computer is the same defined in `pyproject.toml`.
+```shell
+python --version
+```
+If not check if you have a different python version installed.
+```shell
+ls -l $(which -a python python3) 2>/dev/null | grep -o 'python[0-9.]*' | sort -u
+```
+If yes, you can use:
+```shell
+poetry env use python3.12
+```
 
+If not install the python version defined in `pyproject.toml`.
+#### 3. Setup enviroment with dependencies
+The following command will install all dependencies defined in `pyproject.toml` and create a virtual environment.
+```shell
+poetry install
+```
+#### 4. Activate virtual enviroment und test
+The following command will create the virtual enviroment:
+```shell
+poetry env activate
+```
+Then copy the string that was returned in the terminal and paste it in the terminal of your choice. It will look like this:
+```shell
+source /Users/.../.venv/bin/activate
+```
+
+### Others
 A conda env named `cvrp` is assumed (any env with PyTorch, PyTorch Geometric, PyVRP, Gurobi, Hydra, and W&B installed works).
 
 To execute any script, run from the project root and export the repo root onto `PYTHONPATH`:
