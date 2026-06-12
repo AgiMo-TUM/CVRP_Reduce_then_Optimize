@@ -42,14 +42,8 @@ Then copy the string that was returned in the terminal and paste it in the termi
 ```shell
 source /Users/.../.venv/bin/activate
 ```
-
 ### Others
 A conda env named `cvrp` is assumed (any env with PyTorch, PyTorch Geometric, PyVRP, Gurobi, Hydra, and W&B installed works).
-
-To execute any script, run from the project root and export the repo root onto `PYTHONPATH`:
-```bash
-PYTHONPATH=$PWD python scripts/<example_script.py>
-```
 
 W&B is opt-in via the `wandb_use` config flag — set `wandb_use=false` if you don't have an API key.
 
@@ -62,8 +56,9 @@ The active routine in `02_generate_samples.py` re-solves an existing CVRP `.pkl.
 Example:
 ```bash
 # Re-solve a slice of existing CVRP samples with a shorter HGS budget
-PYTHONPATH=$PWD python scripts/01_data/02_generate_samples.py \
-  --config-path "$PWD/configs/training" --config-name config \
+python scripts/01_data/02_generate_samples.py \
+  --config-path ../../configs/training \
+  --config-name config \
   samples_input_dir=data/samples_Munich_100 \
   samples_output_dir=data/samples_generated \
   regul_lambda=1 \

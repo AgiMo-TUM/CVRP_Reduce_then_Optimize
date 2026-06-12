@@ -6,7 +6,6 @@ the HGS heuristic, post-processes solutions, and splits resulting datasets.
 
 import os
 import gzip
-import re
 import math
 import random
 import shutil
@@ -14,7 +13,6 @@ import pickle as pkl
 from pathlib import Path
 
 import numpy as np
-import pandas as pd
 import hydra
 from omegaconf import DictConfig
 from pyvrp import Model as HGS_Model
@@ -50,201 +48,9 @@ def generate_cvrp_instance(num_nodes=20, vehicle_capacity=30, nb_vehicles=5):
 
     return CVRP(nodes, arc_index, vehicle_capacity, arc_costs, nb_vehicles)
 
-def generate_cvrp_instances_Munich(path_nodes: str, path_arcs:str, vehicle_capacity = 30, nb_vehicles = 5):
-    """Build a CVRP instance from Munich nodes/arcs CSV files."""
-    df_nodes = pd.read_csv(path_nodes)
-    indices = df_nodes["Index"].to_numpy()
-    x_coords = df_nodes["X"].to_numpy()
-    y_coords = df_nodes["Y"].to_numpy()
-    demands = df_nodes["Demand/Capacity"].to_numpy()
-    demands = [np.random.randint(1, 10)*(demands[i] != 0) for i in range(len(indices))]
-    print(demands)
-
-
-    #     plt.annotate(str(demands[i]), (x_coords[i] + 0.05, y_coords[i] + 0.05), fontsize=9)
-
-
-    nodes = []
-    for idx in indices: ##need to verify that only one node has 0 demand == depot
-        nodes.append(CVRP_node(idx, demands[idx], x_coords[idx], y_coords[idx]))
-
-    df_arcs = pd.read_csv(path_arcs, header = None, names = ["source", "target", "distance"])
-
-    source = df_arcs["source"].to_numpy()
-    target = df_arcs["target"].to_numpy()
-    distance = df_arcs["distance"].to_numpy()
-    arc_index_list = [[], []]
-    arc_costs_list = []
-
-    for i, src in enumerate(source):
-        if src != target[i]:
-            arc_index_list[0].append(src)
-            arc_index_list[1].append(target[i])
-            arc_costs_list.append(distance[i])
-
-    arc_index = np.array(arc_index_list)
-    arc_costs = np.array(arc_costs_list)
-    return CVRP(nodes, arc_index, vehicle_capacity, arc_costs, nb_vehicles)
-
-
-def generate_subset_cvrp_instances_Munich(path_nodes: str, path_arcs:str, vehicle_capacity = 30, nb_vehicles = 5):
-    """Build a CVRP instance from a subset of Munich nodes/arcs CSV files."""
-    df_nodes = pd.read_csv(path_nodes)
-    indices = df_nodes["Index"].to_numpy()
-    x_coords = df_nodes["X"].to_numpy()
-    y_coords = df_nodes["Y"].to_numpy()
-    demands = df_nodes["Demand/Capacity"].to_numpy()
-    demands = [np.random.randint(1, 10)*(demands[i] != 0) for i in range(len(indices))]
-    print(demands)
-
-
-    #     plt.annotate(str(demands[i]), (x_coords[i] + 0.05, y_coords[i] + 0.05), fontsize=9)
-
-
-    nodes = []
-    for idx in indices: ##need to verify that only one node has 0 demand == depot
-        nodes.append(CVRP_node(idx, demands[idx], x_coords[idx], y_coords[idx]))
-
-    df_arcs = pd.read_csv(path_arcs, header = None, names = ["source", "target", "distance"])
-
-    source = df_arcs["source"].to_numpy()
-    target = df_arcs["target"].to_numpy()
-    distance = df_arcs["distance"].to_numpy()
-    arc_index_list = [[], []]
-    arc_costs_list = []
-
-    for i, src in enumerate(source):
-        if src != target[i]:
-            arc_index_list[0].append(src)
-            arc_index_list[1].append(target[i])
-            arc_costs_list.append(distance[i])
-
-    arc_index = np.array(arc_index_list)
-    arc_costs = np.array(arc_costs_list)
-    return CVRP(nodes, arc_index, vehicle_capacity, arc_costs, nb_vehicles)
-
-
-def generate_restricted_cvrp_instances_Munich(path_nodes: str, path_arcs:str, vehicle_capacity = 150, nb_vehicles = 3000,
-                                                     nb_clients = 20):
-    """Build a Munich CVRP instance restricted to a random subset of clients."""
-    df_nodes = pd.read_csv(path_nodes)
-    indices = df_nodes["Index"].to_numpy()
-    x_coords = df_nodes["X"].to_numpy()
-    y_coords = df_nodes["Y"].to_numpy()
-    demands = df_nodes["Demand/Capacity"].to_numpy()
-    demands = [np.random.randint(1, 50)*(demands[i] != 0) for i in range(len(indices))]
-
-    demands = np.array(demands)
-
-
-    #     plt.annotate(str(demands[i]), (x_coords[i] + 0.05, y_coords[i] + 0.05), fontsize=9)
-
-
-    # Permute numbers 1..nb_clients
-    random_indices = np.random.permutation(np.arange(1, len(demands)))
-
-    # Prepend 0
-    indices = np.concatenate(([0], random_indices[:nb_clients]))
-
-    nodes = []
-    for i, idx in enumerate(indices): ##need to verify that only one node has 0 demand == depot
-        nodes.append(CVRP_node(i, demands[idx], x_coords[idx], y_coords[idx]))
-
-    df_arcs = pd.read_csv(path_arcs, header = None, names = ["source", "target", "distance"])
-
-    source = df_arcs["source"].to_numpy()
-    target = df_arcs["target"].to_numpy()
-    distance = df_arcs["distance"].to_numpy()
-    arc_index_list = [[], []]
-    arc_costs_list = []
-
-    for i, src in enumerate(source):
-        if src != target[i] and src in indices and target[i] in indices:
-            src_pos = np.where(indices == src)[0][0]
-            target_pos = np.where(indices == target[i])[0][0]
-            arc_index_list[0].append(src_pos)
-            arc_index_list[1].append(target_pos)
-            arc_costs_list.append(distance[i])
-
-    arc_index = np.array(arc_index_list)
-    arc_costs = np.array(arc_costs_list)
-    return CVRP(nodes, arc_index, vehicle_capacity, arc_costs, nb_vehicles)
-
-
 # ---------------------------------------------------------------------------
 # Parsers
 # ---------------------------------------------------------------------------
-
-def parse_cvrp_undirected_instances(path_instance):
-    """Parse an undirected CVRP instance from a .vrp text file."""
-    nb_vehicles = 2000
-    with open(path_instance, "r") as f :
-        lines = f.readlines()
-
-    coords = {}
-    demands = {}
-    vehicle_capacity = None
-    mode = None
-
-    for line in lines :
-        line = line.strip()
-
-        if line.startswith("CAPACITY"):
-            vehicle_capacity = int(line.split(":")[1])
-
-        if line.startswith("NODE_COORD_SECTION"):
-            mode="coords"
-            continue
-        if line.startswith("DEMAND_SECTION"):
-            mode="demands"
-            continue
-        if line.startswith("DEPOT_SECTION"):
-            mode = "depot"
-            continue
-        if line.startswith("EOF"):
-            break
-
-        if mode=="coords" and line:
-            parts = line.split()
-            idx = int(parts[0])-1
-            x = float(parts[1])
-            y = float(parts[2])
-            coords[idx] = (x, y)
-
-        if mode=="demands" and line:
-            parts = line.split()
-            idx = int(parts[0])-1
-            demands[idx] = int(parts[1])
-
-
-    nodes = []
-
-    for idx in sorted(coords.keys()):
-        x, y = coords[idx]
-        d = demands[idx]
-        nodes.append(CVRP_node(idx, d, x, y))
-
-    arc_index_list = [[],[]]
-    arc_cost_list = []
-
-    node_ids = sorted(coords.keys())
-
-    for i in node_ids:
-        x1, y1 = coords[i]
-        for j in node_ids:
-            if i < j:
-                x2, y2 = coords[j]
-
-                dist = round(math.sqrt((x1-x2)**2 + (y1-y2)**2))
-                arc_index_list[0].append(i)
-                arc_index_list[1].append(j)
-                arc_cost_list.append(dist)
-
-    arc_index = np.array(arc_index_list)
-    arc_costs = np.array(arc_cost_list)
-    return CVRP(nodes, arc_index, vehicle_capacity, arc_costs, nb_vehicles)
-
-
 def parse_cvrp_literatur_instances(path_instance, undirected = True):
     """Parse a CVRP literature .vrp file (directed or undirected)."""
     nb_vehicles = 100
@@ -524,81 +330,6 @@ def generate_double_arc_solution(instances_path, new_instance_path):
                 pkl.dump(sample, f)
 
 
-def generate_less_longer_HGS_solution(instances_path, new_instance_path, ts =1000, start=0, end=None):
-    """Re-run HGS with a custom time-budget on a slice of instance files."""
-
-    os.makedirs(new_instance_path, exist_ok=True)
-    all_files = sorted([
-        f for f in os.listdir(instances_path)
-        if f.endswith(".pkl.gz") or f.endswith(".gz")
-    ])
-
-    # Default: process until the end
-    if end is None:
-        end = len(all_files)
-
-    # Slice the range
-    selected_files = all_files[start:end]
-
-    print(f"Processing files {start} to {end-1} (total {len(selected_files)})")
-
-    for instance_file in selected_files:
-        with gzip.open(os.path.join(instances_path, instance_file), "rb") as f:
-            result_dict = pkl.load(f)
-
-            new_path = f"{new_instance_path}/shorter_{ts}_"+ instance_file
-            instance_dict = result_dict
-            instance, _ = dict_to_instance(instance_dict)
-
-            index_node = 0
-
-            m = HGS_Model()
-            m.add_vehicle_type(capacity=instance.vehicle_capacity, num_available=instance.nb_vehicles)
-            total_nodes_dict = {}
-
-            depot_node = instance.depot
-            depot_node_id = depot_node.node_id
-            depot = m.add_depot(x=depot_node.x, y=depot_node.y, name="f{depot_node.node_id}")
-
-            index_node += 1
-            total_nodes_dict[depot_node.node_id] = depot
-            for node in instance.clients:
-                total_nodes_dict[node.node_id] = m.add_client(x=node.x, y=node.y, delivery=int(node.demand), name = "f{node.node_id}")
-
-            for i , arc in enumerate(instance.arc_list):
-                m.add_edge(total_nodes_dict[arc[0]], total_nodes_dict[arc[1]],
-                            distance=instance.arc_costs[i])
-            res = m.solve(stop=HGS_MaxRuntime(ts))
-            print(res)
-            print("res_runtime = ", res.runtime)
-            sol_dict = {}
-            instance_dict = {}
-            #         for (src, dst) in (zip(instance.arc_index[0], instance.arc_index[1]))}
-            #     visits = route.visits()
-
-            #     sol_dict[(depot_node_id, visits[0])] = 1
-            #     sol_dict[(visits[-1], depot_node_id)] = 1
-            #         sol_dict[(visits[j-1], visits[j])] = 1
-
-            if res is None or res.cost() is None or len(res.best.routes()) == 0:
-                cost = -1
-                print("infeasible")
-            else:
-                cost = res.cost()
-
-            sample = {
-                # "instance": result_dict["instance"],
-                "instance": instance_dict,
-                "solution": sol_dict,
-                "runtime": res.runtime,
-                "opt_gap": None,
-                "opt_status": "heuristic HGS",
-                "optimal_value" : res.cost(),
-            }
-            with gzip.open(new_path, "wb") as f:
-                pkl.dump(sample, f)
-
-
 def generate_undirected_solution(instances_path, new_instance_path, start=0, end=None):
     """Convert directed HGS solutions/instances to their undirected representation."""
 
@@ -704,42 +435,6 @@ def generate_directed_solution_TW(instances_path, new_instance_path):
             new_path = f"{new_instance_path}/" + instance_file
             with gzip.open(new_path, "wb") as f:
                 pkl.dump(sample, f)
-
-
-def generate_slice_bigger_instances(folder_path, ts, start, end, output_dir=None):
-    """Run undirected HGS solving on a slice of bigger .vrp instances.
-
-    ``output_dir`` is created with ``exist_ok=True`` if it does not exist; no
-    files are overwritten silently because solve_HGS_VRP_undirected writes
-    per-instance .pkl.gz outputs by name.
-    """
-    all_files = sorted([
-        f for f in os.listdir(folder_path)
-        if f.endswith(".vrp")
-    ])
-
-    if end is None:
-        end = len(all_files)
-
-    # Slice the range
-    selected_files = all_files[start:end]
-
-    print(f"Processing files {start} to {end-1} (total {len(selected_files)})")
-
-    if output_dir is None:
-        output_dir = "data/new_bigger_instances_X_generator"
-    os.makedirs(output_dir, exist_ok=True)
-
-    for instance_file in selected_files:
-        instance_path = os.path.join(folder_path, instance_file)
-        solution_filename = instance_file.replace(".vrp", ".sol")
-
-        cvrp_instance = parse_cvrp_undirected_instances(instance_path)
-        solve_HGS_VRP_undirected(
-            cvrp_instance,
-            os.path.join(output_dir, instance_file + ".pkl.gz"),
-            ts,
-        )
 
 
 # ---------------------------------------------------------------------------
@@ -874,7 +569,7 @@ def generate_cvrptw_restricted(instances_path, new_instance_path, horizon=1000.0
 # CVRPLIB-style instance generator
 # ---------------------------------------------------------------------------
 
-def generate_CVRP_LIB_instances(path, nb_clients, seed, nb_instances = 100):
+def generate_CVRP_LIB_instances(path, nb_clients, seed, nb_instances = 100) -> None:
     """Generate CVRPLIB XML100-style .vrp instance files into `path`."""
 
     np.random.seed(seed)
@@ -1165,19 +860,7 @@ def split_dataset(
 def main(training_config: DictConfig) -> None:
     """Hydra entry point: dispatches to the configured sample-generation routine."""
 
-    ts = training_config.regul_lambda
-    start_index = training_config.num_samples
-    end_index = training_config.max_iterations_FW
-
-
     os.makedirs(training_config.samples_output_dir, exist_ok=True)
-    generate_less_longer_HGS_solution(
-        training_config.samples_input_dir,
-        training_config.samples_output_dir,
-        ts=ts,
-        start=start_index,
-        end=end_index,
-    )
 
 
 # --- Main: generate a few samples ---
