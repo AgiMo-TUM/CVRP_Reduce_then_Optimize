@@ -317,7 +317,7 @@ def main(training_config: DictConfig) -> None:
                 all_nodes = []
                 all_edges = []
                 for f in train_files:
-                    sample = torch.load(f)
+                    sample = torch.load(f, weights_only=False)
                     all_nodes.append(torch.tensor(sample["x_nodes"], dtype=torch.float))
                     all_edges.append(torch.tensor(sample["x_connections"], dtype=torch.float))
                 all_nodes = torch.cat(all_nodes, dim=0)

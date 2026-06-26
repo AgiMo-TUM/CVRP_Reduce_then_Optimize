@@ -51,7 +51,6 @@ from core.utils.kpi import evaluate_solution_costs_dict
 
 ##Changes 
 from core.utils.postprocessing import sol_to_list
-from core.fctp_heuristics_julia.python_wrapper import Frank_Wolfe_regularisation_env
 from core.utils.additional_features import MST_feature
 from core.utils.additional_features import compute_voronoi_adjacency
 from core.utils.additional_features import compute_Clark_Wright_savings
@@ -2499,6 +2498,6 @@ def load_labels_from_files(file_list):
     """Concatenate target labels (y) across the given list of `.pt` sample files."""
     labels = []
     for f in file_list:
-        sample = torch.load(f)
+        sample = torch.load(f, weights=False)
         labels.append(sample["y"])
     return labels

@@ -87,8 +87,8 @@ Example:
 ```bash
 PYTHONPATH=$PWD python scripts/02_training_and_evaluation/01_train_sol_edge_predictor.py \
   --config-path "$PWD/configs/training" --config-name config \
-  data_path=data/samples_Munich_100 \
-  validation_data_path=data/samples_Munich_100_test_cluster \
+  data_path=data/XML_split/train \
+  validation_data_path=data/XML_split/validation \
   model=gcnn \
   model.num_conv_layers=6 \
   model.num_dense_layers=2 \
