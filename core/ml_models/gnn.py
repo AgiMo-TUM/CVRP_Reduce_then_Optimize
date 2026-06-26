@@ -44,10 +44,6 @@ class GraphLayerAtt(torch.nn.Module):
         self.dense_va = torch.nn.Linear(in_a, out_v, bias=False)
         self.attention_va = torch.nn.Linear(in_a, 1)
 
-        # self.attention_heads = torch.nn.ModuleList(
-        #     [torch.nn.Linear(in_a, 1) for _ in range(H)]
-        # )
-
         self.dense_aa = torch.nn.Linear(in_a, out_a)
         self.dense_av = torch.nn.Linear(in_v, out_a, bias=False)
 
@@ -197,8 +193,6 @@ class GraphNNAtt(torch.nn.Module):
         self.directed = directed
 
         self.conv = torch.nn.ModuleList()
-        # self.norms_v = torch.nn.ModuleList()
-        # self.norms_a = torch.nn.ModuleList()
 
         self.conv.append(
             GraphLayerAtt(
@@ -208,8 +202,7 @@ class GraphNNAtt(torch.nn.Module):
                 weight_init_func=weight_init_func,
             )
         )
-        # self.norms_v.append(torch.nn.LayerNorm(conv_dims[0][0]))
-        # self.norms_a.append(torch.nn.LayerNorm(conv_dims[0][1]))
+
 
         for i in range(1, len(conv_dims)):
             self.conv.append(
@@ -220,17 +213,15 @@ class GraphNNAtt(torch.nn.Module):
                     weight_init_func=weight_init_func,
                 )
             )
-            # self.norms_v.append(torch.nn.LayerNorm(conv_dims[i][0]))
-            # self.norms_a.append(torch.nn.LayerNorm(conv_dims[i][1]))
+
 
         self.dense = torch.nn.ModuleList()
-        # self.norm_dense = torch.nn.ModuleList()
+
         if len(dense_dims) >= 1:
             self.dense.append(torch.nn.Linear(conv_dims[-1][-1], dense_dims[0]))
-            # self.norm_dense.append(torch.nn.LayerNorm(dense_dims[0]))
+
             for i in range(1, len(dense_dims)):
                 self.dense.append(torch.nn.Linear(dense_dims[i - 1], dense_dims[i]))
-                # self.norm_dense.append(torch.nn.LayerNorm(dense_dims[0]))
 
         self.output_dim = dim_out
         if len(dense_dims) >= 1:

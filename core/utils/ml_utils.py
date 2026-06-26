@@ -1919,7 +1919,7 @@ class CVRPData(Dataset):
         return len(self.file_list)
 
     def __getitem__(self, idx):
-        sample = torch.load(self.file_list[idx])
+        sample = torch.load(self.file_list[idx], weights_only=False)
 
         # print(torch.tensor(sample["y"], dtype=torch.float))
 
@@ -2492,12 +2492,11 @@ def save_dataset_to_pt(sample_paths, out_dir, feature_extractor):
         }
 
         torch.save(sample, os.path.join(out_dir, f"sample_{i:05d}.pt"))
-        print("done")
 
 def load_labels_from_files(file_list):
     """Concatenate target labels (y) across the given list of `.pt` sample files."""
     labels = []
     for f in file_list:
-        sample = torch.load(f, weights=False)
+        sample = torch.load(f, weights_only=False)
         labels.append(sample["y"])
     return labels
