@@ -22,6 +22,7 @@ from core.utils.cvrp import CVRP_node
 from core.utils.cvrp import CVRP
 from core.data_processing.data_utils import dict_to_instance
 from core.cvrp_solvers.heuristics import heu_solve_HGS_VRPTW
+from core.cvrp_solvers.heuristics import heu_solve_HGS_VRP
 
 
 # ---------------------------------------------------------------------------
@@ -783,6 +784,44 @@ def generate_CVRP_LIB_instances(path, nb_clients, seed, nb_instances = 100) -> N
         f.write('DEPOT_SECTION\n1\n-1\nEOF\n')
 
         f.close()
+    return pathToWrite
+
+
+"""New generation function using the instance generator from literature to create sample: Instance and Solution"""
+
+def samples_generation_CVRP_literature(instance_path, save_path, HGS_time_limit=100):
+    cvrp_instance = parse_cvrp_literatur_instances(instance_path)
+    # solution_cvrp_instance = parse_solution_file(solution_path)
+
+
+    solution, cost, runtime = heu_solve_HGS_VRP(
+        cvrp_instance.demands,
+        cvrp_instance.arc_index,
+        cvrp_instance.arc_costs,
+        cvrp_instance.nb_vehicles,
+        cvrp_instance.vehicle_capacity,
+        None,
+        heu_time=HGS_time_limit,
+        undirected=True,
+        arc_likelihood=None,
+        instance_log_HGS_dict=None,
+        threshold=None,
+        nodes=None,
+        relevant_connections_1=None,
+        pyvrp_version=None,
+    )
+
+
+
+    sample = {
+        "instance": cvrp_instance.to_dict(),
+        "solution": solution,
+        "runtime": runtime,
+        "opt_status": f"HGS_runtime{HGS_time_limit}"
+    }
+    save_filename = instance_path[:-9].replace(".vrp", "")
+    with gzip.open(save_path +save_filename +".pkl.gz", "wb") as f:
+        pkl.dump(sample, f)
 
 
 # ---------------------------------------------------------------------------
@@ -865,8 +904,11 @@ def main(data_generation_config: DictConfig) -> None:
     seed = data_generation_config.seed
     nb_clients = data_generation_config.nb_clients
     nb_instances = data_generation_config.nb_instances
+    save_path = data_generation_config.save_path
 
-    generate_CVRP_LIB_instances(data_path, nb_clients, seed, nb_instances)
+    instance_path = generate_CVRP_LIB_instances(data_path, nb_clients, seed, nb_instances)
+    samples_generation_CVRP_literature(instance_path, save_path, HGS_time_limit=100)
+
 
 
 # --- Main: generate a few samples ---
