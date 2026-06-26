@@ -3,13 +3,53 @@
 This repository contains the code to train a GNN-based arc predictor and run a reduce-then-optimize pipeline for CVRP (and the time-windowed variant CVRPTW). The decoder backend is either Gurobi (exact) or HGS via PyVRP.
 
 ## Local Setup
-
-A conda env named `cvrp` is assumed (any env with PyTorch, PyTorch Geometric, PyVRP, Gurobi, Hydra, and W&B installed works).
-
-To execute any script, run from the project root and export the repo root onto `PYTHONPATH`:
-```bash
-PYTHONPATH=$PWD python scripts/<example_script.py>
+### Poetry
+#### 1. Install Poetry
+```shell
+pip install poetry
 ```
+or [offical installer Guide](https://github.com/python-poetry/install.python-poetry.org)
+and check if the installation worked:
+```shell
+poetry --version
+```
+#### 2. Check local python version
+Check if the standard python version on your local computer is the same defined in `pyproject.toml`.
+```shell
+python --version
+```
+If not check if you have a different python version installed.
+For linux:
+```shell
+ls -l $(which -a python python3) 2>/dev/null | grep -o 'python[0-9.]*' | sort -u
+```
+For windows:
+```shell
+py --list-paths
+```
+
+If yes, you can use:
+```shell
+poetry env use <path_to_python_version>
+```
+
+If not install the python version defined in `pyproject.toml`.
+#### 3. Setup enviroment with dependencies
+The following command will install all dependencies defined in `pyproject.toml` and create a virtual environment.
+```shell
+poetry install
+```
+#### 4. Activate virtual enviroment und test
+The following command will create the virtual enviroment:
+```shell
+poetry env activate
+```
+Then copy the string that was returned in the terminal and paste it in the terminal of your choice. It will look like this:
+```shell
+source /Users/.../.venv/bin/activate
+```
+### Others
+A conda env named `cvrp` is assumed (any env with PyTorch, PyTorch Geometric, PyVRP, Gurobi, Hydra, and W&B installed works).
 
 W&B is opt-in via the `wandb_use` config flag — set `wandb_use=false` if you don't have an API key.
 
@@ -22,13 +62,13 @@ The active routine in `02_generate_samples.py` re-solves an existing CVRP `.pkl.
 Example:
 ```bash
 # Re-solve a slice of existing CVRP samples with a shorter HGS budget
-PYTHONPATH=$PWD python scripts/01_data/02_generate_samples.py \
-  --config-path "$PWD/configs/training" --config-name config \
-  samples_input_dir=data/samples_Munich_100 \
-  samples_output_dir=data/samples_generated \
-  regul_lambda=1 \
-  num_samples=0 \
-  max_iterations_FW=5
+python scripts/01_data/02_generate_samples.py \
+  --config-path ../../configs/data_generation \
+  --config-name config \
+  data_path="data/default_folder" \
+  nb_clients=30 \
+  seed=1 \
+  nb_instances=10 
 ```
 
 I/O paths come from `configs/training/config.yaml` (`samples_input_dir`, `samples_output_dir`). The slice is controlled by `num_samples` (start) and `max_iterations_FW` (end); `regul_lambda` is the HGS time budget in seconds.
@@ -47,8 +87,8 @@ Example:
 ```bash
 PYTHONPATH=$PWD python scripts/02_training_and_evaluation/01_train_sol_edge_predictor.py \
   --config-path "$PWD/configs/training" --config-name config \
-  data_path=data/samples_Munich_100 \
-  validation_data_path=data/samples_Munich_100_test_cluster \
+  data_path=data/XML_split/train \
+  validation_data_path=data/XML_split/validation \
   model=gcnn \
   model.num_conv_layers=6 \
   model.num_dense_layers=2 \

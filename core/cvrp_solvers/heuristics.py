@@ -505,7 +505,7 @@ def _heu_solve_HGS_VRP_old(
     arc_costs,
     nb_vehicles,
     vehicle_capacity,
-    relevant_connections,
+    relevant_connections=None,
     heu_time=100,
     undirected=True,
     arc_likelihood=None,
@@ -519,6 +519,8 @@ def _heu_solve_HGS_VRP_old(
             break
 
     arc_list = [(int(src), int(dst)) for src, dst in zip(arc_index[0], arc_index[1])]
+    if relevant_connections is None:
+        relevant_connections = [True for arc in arc_list]
 
     m = HGS_Model()
     m.add_vehicle_type(capacity=vehicle_capacity, num_available=nb_vehicles)

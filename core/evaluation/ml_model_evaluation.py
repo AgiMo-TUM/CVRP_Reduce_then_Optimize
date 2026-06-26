@@ -4,8 +4,6 @@ import os
 from shutil import copy
 
 import numpy as np
-import pandas as pd
-import plotly.express as px
 import torch
 from torch.utils.data import DataLoader
 

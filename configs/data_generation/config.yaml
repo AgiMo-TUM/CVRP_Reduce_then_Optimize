@@ -1,0 +1,5 @@
+data_path: "data/default_folder"
+save_path: "data/default_folder_samples"
+seed: 0
+nb_clients: 20
+nb_instances: 10
