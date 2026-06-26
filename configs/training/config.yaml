@@ -7,6 +7,7 @@ num_samples: null
 validation_num_samples: null
 var_size_samples: False
 train_batch_size: 32
+accum_steps: 32
 val_batch_size: 128
 max_num_epochs: 500
 learning_rate: 0.001

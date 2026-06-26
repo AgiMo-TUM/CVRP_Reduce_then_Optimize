@@ -46,10 +46,10 @@ class BaseLearner:
     def train_step(self, batch):
         """Perform one training step on a batch (forward + backward)."""
         self.model.train()
-        self.optimizer.zero_grad()
+        # self.optimizer.zero_grad()
         loss, predictions, true_loss = self.forward_pass(batch)
         loss.backward()
-        self.optimizer.step()
+        # self.optimizer.step()
         return loss, predictions, true_loss
 
     def forward_pass(self, inputs, labels, *args, **kwargs):

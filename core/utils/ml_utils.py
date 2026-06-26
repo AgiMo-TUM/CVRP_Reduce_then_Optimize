@@ -2068,7 +2068,8 @@ def training_wrapper(
     exp_dict["initial_performance"] = defaultdict(lambda: [])
     exp_dict["performance"] = defaultdict(lambda: [])
 
-    accum_steps = 32
+    accum_steps = training_config.accum_steps
+
     policy.optimizer.zero_grad()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     policy.model = policy.model.to(device)
@@ -2263,84 +2264,6 @@ def training_wrapper(
 # Model pre- and postprocessing
 ############################
 
-
-# def load_arc_predictor_model(model_path, get_feature_fun=True, get_label_fun=False):
-#     """Helper function to load edge predictor model.
-
-#     Parameters
-#     ----------
-#     model_path: str
-#         Path to model checkpoint, containing model weights, normalizer states, and configs.
-#     get_feature_fun: bool, optional
-#         Indicate whether feature extraction function should be returned in addition to arc
-#         predictor model. Default is True.
-#     get_label_fun: bool, optional
-#         Indicate whether label extraction function should be returned in addition to arc predictor
-#         model. Default is True.
-
-#     Returns
-#     -------
-#     tuple
-#         1-element, 2-element, or 3-element tuple, comprising arc predictor model and potentially
-#         feature extraction function and label extraction function.
-
-#     """
-#     return_vals = []
-
-#     chkpnt = torch.load(model_path, map_location="cpu")
-#     model_config = chkpnt["model_config"]
-#     model_state = chkpnt["state_dict"]
-#     normalizer_state = chkpnt["normalizers"]
-
-#     # Configure policy
-#     if model_config.model == "gcnn":
-#         policy_fun = GCNNSolArcPredictor
-#     else:
-#         raise ValueError
-
-#     # Configure normalizer
-#     input_transformer = None
-#     if model_config.normalization == "standard":
-#         assert (
-#             normalizer_state is not None
-#         ), "Normalization parameters expected but are None"
-#         normalizers = tuple([StandardNormalizer(*vals) for vals in normalizer_state])
-#         input_transformer = MultiInputNormalizer(normalizers)
-
-#     # Load model and parameters
-#     policy = policy_fun(
-#         model_config=model_config,
-#         input_transformer=input_transformer,
-#     )
-#     policy.model.load_state_dict(model_state)
-#     policy.model.eval()
-
-#     if not get_feature_fun and not get_label_fun:
-#         return policy
-
-#     return_vals = [policy]
-
-#     if get_feature_fun:
-#         print("feature : ", model_config.features)
-#         # Configure feature extraction function
-#         if model_config.features == "raw":
-#             feature_fun = get_graph_raw_features_for_instance
-#         else:
-#             if model_config.features=="additional_features":
-#                 feature_fun = get_graph_additional_features_for_instance
-#             else:
-#                 raise ValueError
-#         return_vals.append(feature_fun)
-
-#     if get_label_fun:
-#         # Configure label extraction function
-#         if model_config.prediction_task == "binary_classification":
-#             label_fun = partial(get_raw_target_for_instance, binary_target=True)
-#         else:
-#             raise ValueError
-#         return_vals.append(label_fun)
-
-#     return tuple(return_vals)
 
 
 def get_raw_targets(
