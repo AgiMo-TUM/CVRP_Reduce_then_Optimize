@@ -1548,13 +1548,9 @@ def get_graph_additional_2_features(
 
 def get_graph_additional_3_features_for_instance(instance, batch_dim=True):
     """Extract node + arc features (variant 3) for a single CVRP instance."""
-    logger1.info("Start MST")
     MST_bool =  MST_feature(instance)
-    logger1.info("Start Voro")
     Voro_adj_bool = compute_voronoi_adjacency(instance)
-    logger1.info("Start Clark")
     Clark_Wright_savings = compute_Clark_Wright_savings(instance)
-    logger1.info("done")
     x_nodes = np.array([[node.demand, instance.vehicle_capacity] for node in instance.nodes])[:,:, None] 
     x_a = np.array([[cost, MST_bool[k], Voro_adj_bool[k], Clark_Wright_savings[k]] 
           for k, cost in enumerate(instance.arc_costs)])[:,:, None]
@@ -2355,7 +2351,7 @@ def load_arc_predictor_model(model_path, get_feature_fun=True, get_label_fun=Fal
         model_config=model_config,
         input_transformer=input_transformer,
     )
-    policy.model.load_state_dict(model_state)
+    policy.model.load_state_dict(model_state, strict=False)
     policy.model.eval()
     policy.model.to(device)
 

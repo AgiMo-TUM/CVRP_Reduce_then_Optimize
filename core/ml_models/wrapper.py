@@ -205,6 +205,11 @@ def get_reduced_problem(
         for arc, val in greedy_sol.items():
             if val > 0 and arc in arc_index_map:
                 relevant_connections[arc_index_map[arc]] = True
+    
+    else:
+        for k, (u,v) in enumerate(zip(instance.arc_index[0], instance.arc_index[1])): #fast feasibility step
+            if u==0 or v==0:                                                           #with unlimited number of vehicles
+                relevant_connections[k] = True
 
     num_arcs_pred = int(np.sum(relevant_connections))
     num_arcs_enriched = num_arcs_pred
@@ -213,7 +218,6 @@ def get_reduced_problem(
 
     return (
         relevant_connections,
-        instance.arc_index,
         (num_arcs_pred, num_arcs_enriched),
         completion_runtime,
         inference_runtime,
@@ -222,11 +226,9 @@ def get_reduced_problem(
 
 def solve_reduced_problem(
     instance,
-    arc_index,
     relevant_connections,
     decoder="hgs",
     decoder_cfg=None,
-    seed=0,
     heu_time=100,
     time_limit=5000,
     arc_likelihood=None,
@@ -235,7 +237,7 @@ def solve_reduced_problem(
     is_time_windows=False,
     pyvrp_version="old",
 ):
-    """Solve the reduced problem with either the exact (Gurobi) decoder or HGS.
+    """Solve the reduced problem with either the exact (VRP-Easy) decoder or HGS.
 
     Parameters
     ----------
@@ -254,7 +256,7 @@ def solve_reduced_problem(
     if decoder == "exact":
         if is_time_windows:
             cvrpTW_via_VRP_Easy = _import_cvrpTW_via_VRP_Easy()
-            solution, runtime, solver_value, lower_bound, status = cvrpTW_via_VRP_Easy(
+            solution, runtime, solver_value, lower_bound, status, build_solver_runtime = cvrpTW_via_VRP_Easy(
                 instance.nodes,
                 instance.arc_index,
                 instance.arc_costs,
@@ -262,22 +264,21 @@ def solve_reduced_problem(
                 instance.vehicle_capacity,
                 relevant_connections,
                 False,
-                time_limit=time_limit,
+                time_limit=time_limit
             )
         else:
-            solution, runtime, solver_value, lower_bound, status = cvrp_via_VRP_Easy(
+            solution, runtime, solver_value, lower_bound, status, build_solver_runtime = cvrp_via_VRP_Easy(
                 instance.demands,
                 instance.arc_index,
                 instance.arc_costs,
                 instance.nb_vehicles,
                 instance.vehicle_capacity,
                 relevant_connections,
-                False,
-                time_limit=time_limit,
+                time_limit=time_limit
             )
     elif decoder == "hgs":
         if is_time_windows:
-            solution, solver_value, runtime = heu_solve_HGS_VRPTW(
+            solution, solver_value, runtime, status, build_solver_runtime = heu_solve_HGS_VRPTW(
                 instance.nodes,
                 instance.arc_index,
                 instance.arc_costs,
@@ -290,7 +291,7 @@ def solve_reduced_problem(
                 pyvrp_version=pyvrp_version,
             )
         else:
-            solution, solver_value, runtime = heu_solve_HGS_VRP(
+            solution, solver_value, runtime, status, build_solver_runtime = heu_solve_HGS_VRP(
                 instance.demands,
                 instance.arc_index,
                 instance.arc_costs,
@@ -308,7 +309,7 @@ def solve_reduced_problem(
     else:
         raise ValueError(f"Unknown decoder: {decoder}")
 
-    return solution, runtime, solver_value, lower_bound, status
+    return solution, runtime, solver_value, lower_bound, status, build_solver_runtime
 
 
 def ml_based_cvrp_reduction(
@@ -318,7 +319,6 @@ def ml_based_cvrp_reduction(
     threshold=20,
     decoder="hgs",
     decoder_cfg=None,
-    seed=0,
     heu_time=100,
     time_limit=5000,
     cached_features=None,
@@ -332,30 +332,32 @@ def ml_based_cvrp_reduction(
     Step 1: predict arc likelihoods and reduce the arc set.
     Step 2: solve the reduced problem with the configured decoder.
     """
-    (
-        relevant_connections,
-        arc_index,
-        (num_arcs_pred, num_arcs_enriched),
-        completion_runtime,
-        inference_runtime,
-    ) = get_reduced_problem(
-        instance,
-        predictor_model,
-        threshold_type=threshold_type,
-        threshold=threshold,
-        cached_features=cached_features,
-        completion_heu_time=completion_heu_time,
-        is_time_windows=is_time_windows,
-        pyvrp_version=pyvrp_version,
-    )
+    if threshold!=1:
+        (
+            relevant_connections,
+            (num_arcs_pred, num_arcs_enriched),
+            completion_runtime,
+            inference_runtime
+        ) = get_reduced_problem(
+            instance,
+            predictor_model,
+            threshold_type=threshold_type,
+            threshold=threshold,
+            cached_features=cached_features,
+            completion_heu_time=completion_heu_time,
+            is_time_windows=is_time_windows,
+            pyvrp_version=pyvrp_version,
+        )
+    else:
+        (relevant_connections,  (num_arcs_pred, num_arcs_enriched), 
+         completion_runtime, inference_runtime) =  ([True]*len(instance.arc_costs),
+                                                     (len(instance.arc_costs),len(instance.arc_costs)), 0, 0)
 
-    solution, solver_runtime, solver_value, lower_bound, status = solve_reduced_problem(
+    solution, solver_runtime, solver_value, lower_bound, status, build_solver_runtime = solve_reduced_problem(
         instance,
-        arc_index,
         relevant_connections,
         decoder=decoder,
         decoder_cfg=decoder_cfg,
-        seed=seed,
         heu_time=heu_time,
         time_limit=time_limit,
         threshold=threshold,
@@ -371,7 +373,8 @@ def ml_based_cvrp_reduction(
         solver_value,
         status,
         solver_runtime,
-        0,
         inference_runtime,
+        lower_bound,
         completion_runtime,
+        build_solver_runtime
     )

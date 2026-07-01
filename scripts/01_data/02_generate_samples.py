@@ -25,6 +25,11 @@ from core.cvrp_solvers.heuristics import heu_solve_HGS_VRPTW
 from core.cvrp_solvers.heuristics import heu_solve_HGS_VRP
 
 
+def _import_cvrpTW_via_VRP_Easy():
+    """Lazy import; only loaded when ``is_time_windows`` decoder is requested."""
+    from core.cvrp_solvers.ip_grb import cvrpTW_via_VRP_Easy  # noqa: WPS433
+    return cvrpTW_via_VRP_Easy
+
 # ---------------------------------------------------------------------------
 # Instance generators
 # ---------------------------------------------------------------------------
@@ -38,10 +43,10 @@ def generate_cvrp_instance(num_nodes=20, vehicle_capacity=30, nb_vehicles=5):
         x, y = np.random.rand(2) * 100
         nodes.append(CVRP_node(i, demand, x, y))
 
-    # Fully connected directed arcs (excluding self-loops)
+    # Fully connected undirected arcs (excluding self-loops)
     arc_index = np.array(
-        [[i for i in range(num_nodes) for j in range(num_nodes) if i != j],
-         [j for i in range(num_nodes) for j in range(num_nodes) if i != j]]
+        [[i for i in range(num_nodes) for j in range(num_nodes) if i < j],
+         [j for i in range(num_nodes) for j in range(num_nodes) if i < j]]
     )
 
     # Random arc costs
@@ -54,7 +59,7 @@ def generate_cvrp_instance(num_nodes=20, vehicle_capacity=30, nb_vehicles=5):
 # ---------------------------------------------------------------------------
 def parse_cvrp_literatur_instances(path_instance, undirected = True):
     """Parse a CVRP literature .vrp file (directed or undirected)."""
-    nb_vehicles = 100
+    # nb_vehicles = 100
     with open(path_instance, "r") as f :
         lines = f.readlines()
 
@@ -101,6 +106,7 @@ def parse_cvrp_literatur_instances(path_instance, undirected = True):
         d = demands[idx]
         nodes.append(CVRP_node(idx, d, x, y))
 
+    nb_vehicles = len(nodes)-1 #default value since here the number of vehicles is supposed to be unlimited
     arc_index_list = [[],[]]
     arc_cost_list = []
 
@@ -130,7 +136,7 @@ def parse_cvrp_literatur_instances(path_instance, undirected = True):
     arc_costs = np.array(arc_cost_list)
     return CVRP(nodes, arc_index, vehicle_capacity, arc_costs, nb_vehicles)
 
-def parse_solution_file(path, depot=0, undirected=True):
+def parse_solution_file(path, depot=0):
     """Parse a CVRP .sol file into a {(u,v): 1} arc-usage dictionary."""
     arcs = {}   # dictionary of arcs (u, v) → 1
 
@@ -160,6 +166,37 @@ def parse_solution_file(path, depot=0, undirected=True):
             arcs[(route[-1], depot)] = 1
 
     return arcs
+
+
+def generate_cvrp_sample_from_litterature(instance_path, solution_path, save_folder_path, undirected = True, depot = 0):
+
+
+    cvrp_instance = parse_cvrp_literatur_instances(instance_path, undirected)
+    solution_cvrp_instance = parse_solution_file(solution_path, depot)
+
+
+    arc_indicator = {} # All arcs in the instance
+    sources = cvrp_instance.arc_index[0]
+    targets = cvrp_instance.arc_index[1]
+
+    for u, v in zip(sources, targets):
+        if (u, v) in solution_cvrp_instance or (v,u) in solution_cvrp_instance:
+            arc_indicator[(u, v)] = 1 
+        else:
+            arc_indicator[(u, v)] = 0
+
+
+    sample = {
+        "instance": cvrp_instance.to_dict(),
+        "solution": arc_indicator,
+        "runtime": 0,
+        "opt_gap": None,
+        "opt_status": "best_opt",
+    }
+    # save_filename = filename.replace(".vrp", "")
+    save_filename = instance_path[:-6]
+    with gzip.open(save_folder_path +save_filename +".pkl.gz", "wb") as f:
+        pkl.dump(sample, f)
 
 
 # ---------------------------------------------------------------------------
@@ -443,8 +480,9 @@ def generate_directed_solution_TW(instances_path, new_instance_path):
 # ---------------------------------------------------------------------------
 
 def generate_cvrptw_restricted(instances_path, new_instance_path, horizon=1000.0,
-    width_min_prob=0.05, width_max_prob=0.3, speed = 13.9, service_time=30, seed=0, HGS_runtime=1000,
-    start=0, end=10, undirected=True):
+    width_min_prob_large=0.66, width_max_prob_large=0.9, width_min_prob_narrow=0.1,
+    width_max_prob_narrow=0.3, speed = 13.9, service_time=30, seed=0, HGS_runtime=1000,
+    start=0, end=10, undirected=True, ready_time_init=0, solve_exact=False, exact_time_limit=False):
     """Augment any CVRP instance set with random time windows and solve via HGS.
 
     The source CVRP graph is undirected; CVRPTW requires directed arcs, so the
@@ -452,8 +490,17 @@ def generate_cvrptw_restricted(instances_path, new_instance_path, horizon=1000.0
     the new instance.
     """
 
+
+    choose_type_window = np.random.rand() > 0.5
+    if choose_type_window: #1 corresponds to large windows
+        width_min_prob = width_min_prob_large
+        width_max_prob = width_max_prob_large
+    else:
+        width_min_prob = width_min_prob_narrow
+        width_max_prob = width_max_prob_narrow
+
     print("width_min_prob = ", width_min_prob, ", width_max_prob = ",
-     width_max_prob, ", service_time = ", service_time, ", speed = ", speed, "seed = ", seed)
+    width_max_prob, ", service_time = ", service_time, ", speed = ", speed, "seed = ", seed)
     rng = np.random.default_rng(seed)
 
     if width_min_prob <= 0 or width_max_prob < width_min_prob:
@@ -476,7 +523,7 @@ def generate_cvrptw_restricted(instances_path, new_instance_path, horizon=1000.0
     print(f"Processing files {start} to {end-1} (total {len(selected_files)})")
 
     for instance_file in selected_files:
-    #     for instance_file in files:
+            
             with gzip.open(instances_path +"/" + instance_file, "rb") as f:
                 result_dict = pkl.load(f)
 
@@ -487,13 +534,15 @@ def generate_cvrptw_restricted(instances_path, new_instance_path, horizon=1000.0
 
             min_distance = 999999
 
+            depot_node_time = {}
+
             for k, (u,v) in enumerate(zip(copy_instance.arc_index[0], copy_instance.arc_index[1])):
-                if(u == 0 and copy_instance.arc_costs[k]> max_distance):
-                    max_distance = copy_instance.arc_costs[k]
-                if(u == 0 and copy_instance.arc_costs[k] < min_distance):
-                    min_distance = copy_instance.arc_costs[k]
-                if((u,v)== (0,2)):
-                    print("time travel depot client 2 : ", copy_instance.arc_costs[k]//speed)
+                if(u==0):
+                    depot_node_time[v]=copy_instance.arc_costs[k]
+                    if copy_instance.arc_costs[k]> max_distance:
+                        max_distance = copy_instance.arc_costs[k]
+                    if copy_instance.arc_costs[k] < min_distance:
+                        min_distance = copy_instance.arc_costs[k]
 
 
             mean_travelling_time = np.mean(copy_instance.arc_costs)/speed
@@ -506,8 +555,11 @@ def generate_cvrptw_restricted(instances_path, new_instance_path, horizon=1000.0
             print("min_duration = ", min_duration)
 
 
-            horizon = int(2*max_duration
-            + sum([node.demand for node in copy_instance.nodes])/copy_instance.vehicle_capacity * (service_time + mean_travelling_time))
+            # horizon = int(2*max_duration
+            # + sum([node.demand for node in copy_instance.nodes])/copy_instance.vehicle_capacity * (service_time + mean_travelling_time))
+            horizon = int(2*max_duration + 
+                          int(copy_instance.vehicle_capacity/sum([node.demand for node in copy_instance.nodes])/len(copy_instance.nodes))
+                          *(mean_travelling_time+service_time)) + ready_time_init # by default ready_time=0
 
             print("horizon : ", horizon)
 
@@ -520,16 +572,15 @@ def generate_cvrptw_restricted(instances_path, new_instance_path, horizon=1000.0
                 d = node.demand
                 idx = node.node_id
                 if node.demand == 0:
-                    ready_time = 0
+                    ready_time = ready_time_init
                     due_time = int(horizon)
                     service_time = 0.0
-                    print("hey")
                 else:
-                    w = int(rng.uniform(width_min, width_max))
-                    latest = max(min_duration, int(horizon) - w)
-                    a = int(rng.uniform(min_duration, latest))
-                    ready_time = a
-                    due_time = a + w
+                    center= rng.uniform(depot_node_time[node.node_id] + ready_time_init,
+                                             horizon- depot_node_time[node.node_id]-service_time) #symmetric arcs
+                    w = rng.uniform(width_min, width_max)
+                    ready_time = int(center - w/2)
+                    due_time = int(center + w/2)
 
                     print("node : ", i, ", width: ", w, ", ready_time : ", ready_time, ", due_time : ", due_time)
                 i +=1
@@ -538,28 +589,55 @@ def generate_cvrptw_restricted(instances_path, new_instance_path, horizon=1000.0
 
             # CVRPTW is directed: duplicate every arc with its reverse so that
             # same order (symmetric travel times under the constant `speed`).
-            _arc_idx = np.asarray(copy_instance.arc_index)
-            doubled_arc_index = np.concatenate(
-                [_arc_idx, _arc_idx[[1, 0]]], axis=1
-            )
-            doubled_arc_costs = np.concatenate(
-                [copy_instance.arc_costs, copy_instance.arc_costs]
-            )
+            _arc_idx = np.asarray(copy_instance.arc_index)   # shape (2, m)
 
-            new_instance = CVRP(new_cvrptw_nodes, doubled_arc_index,
-            copy_instance.vehicle_capacity, doubled_arc_costs // speed, copy_instance.nb_vehicles)
+            # Extract i and j rows
+            i = _arc_idx[0]
+            j = _arc_idx[1]
+
+            # Build directed arcs
+            directed_i = np.concatenate([i, j])   # forward then reverse
+            directed_j = np.concatenate([j, i])
+
+            directed_arc_index = np.vstack([directed_i, directed_j])
+
+            # Duplicate costs
+            directed_arc_costs = np.concatenate([copy_instance.arc_costs,
+                                                copy_instance.arc_costs])
+
+
+            new_instance = CVRP(new_cvrptw_nodes, directed_arc_index,
+            copy_instance.vehicle_capacity, directed_arc_costs // speed, copy_instance.nb_vehicles)
 
             relevant_connections = [True for k in range(len(new_instance.arc_costs))]
-            cvrptw_solution, _, feasibility_test = heu_solve_HGS_VRPTW(new_instance.nodes, new_instance.arc_index,
+            cvrptw_solution, cost, feasibility_test, _, _ = heu_solve_HGS_VRPTW(new_instance.nodes, new_instance.arc_index,
                             new_instance.arc_costs, new_instance.nb_vehicles, new_instance.vehicle_capacity,
                             relevant_connections, heu_time = HGS_runtime, undirected=undirected)
+
             if feasibility_test :
+                runtime  = 0
+                status = "HGS_time_limit"
+                if solve_exact:
+
+                    cvrpTW_via_VRP_Easy = _import_cvrpTW_via_VRP_Easy()
+                    cvrptw_solution, runtime, solver_value, lower_bound, status, build_solver_runtime = cvrpTW_via_VRP_Easy(
+                        new_instance.nodes,
+                        new_instance.arc_index,
+                        new_instance.arc_costs,
+                        new_instance.nb_vehicles,
+                        new_instance.vehicle_capacity,
+                        relevant_connections,
+                        False,
+                        time_limit=exact_time_limit,
+                        upper_bound=cost
+                    )
+
                 sample = {
                     "instance": new_instance.to_dict(),
                     "solution": cvrptw_solution,
-                    "runtime": HGS_runtime,
+                    "runtime": HGS_runtime + runtime,
                     "opt_gap": None,
-                    "opt_status": "heuristic HGS",
+                    "opt_status": status,
                 }
                 new_path = f"{new_instance_path}/" + "cvrptw_" + instance_file
                 with gzip.open(new_path, "wb") as f:

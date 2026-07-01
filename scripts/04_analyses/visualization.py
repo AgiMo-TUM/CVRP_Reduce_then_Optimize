@@ -34,8 +34,6 @@ from core.evaluation.benchmarking_utils import get_num_arcs_used_by_method
 from core.data_processing.data_utils import dict_to_instance
 
 
-from core.fctp_heuristics_julia.python_wrapper import Frank_Wolfe_regularisation_env
-
 from core.cvrp_solvers.ip_grb import cvrp_via_VRP_Easy
 
 from core.utils.additional_features import MST_feature
@@ -46,6 +44,10 @@ from core.utils.additional_features import compute_Clark_Wright_savings
 from core.cvrp_solvers.heuristics import heu_solve_HGS_VRPTW
 from core.data_processing.data_utils import load_instance
 # `load_with_numpy_fix` was unused; dropped.
+
+from core.utils.ml_utils import load_arc_predictor_model
+from core.ml_models.wrapper import get_reduced_problem
+from core.utils.kpi import eval_arc_prediction_accuracy
 
 from collections import defaultdict
 
@@ -3108,3 +3110,47 @@ def plt_new_HGS_77_average_runtime_2(dict_path):
     plt.grid(True)
     plt.tight_layout()
     plt.show()
+
+
+def get_performances_selection_method(selected_method, model_path, instance_dir, is_time_windows,
+                                      start_index, end_index, thresholds_list = None):
+
+    arc_predictor_model = load_arc_predictor_model(model_path, get_feature_fun=True)
+
+    instance_paths = [
+        os.path.join(instance_dir, filename)
+        for filename in os.listdir(instance_dir)
+    ]
+    performance_dict = {}
+    
+    for counter, instance_path in enumerate(instance_paths):
+
+        if(counter < start_index or counter > end_index):
+            continue
+
+        instance, instance_solution = load_instance(instance_path)
+
+        for threshold in thresholds_list:
+            if threshold not in performance_dict:
+                performance_dict[threshold] = []
+            (
+                relevant_connections,
+                (num_arcs_pred, num_arcs_enriched),
+                completion_runtime,
+                inference_runtime
+            ) = get_reduced_problem(
+                instance,
+                arc_predictor_model,
+                threshold_type=selected_method,
+                threshold=threshold,
+                cached_features=None,
+                completion_heu_time=0,
+                is_time_windows=is_time_windows
+            )
+
+            best_known_solution_array = np.array(instance_solution)
+
+            accuracy, recall, precision, fscore = eval_arc_prediction_accuracy(relevant_connections, best_known_solution_array)
+            performance_dict[threshold].append((accuracy, recall, precision, fscore))
+
+    return performance_dict
