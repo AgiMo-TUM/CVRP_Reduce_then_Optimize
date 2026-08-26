@@ -11,6 +11,9 @@ import random
 import shutil
 import pickle as pkl
 from pathlib import Path
+import re
+import matplotlib.pyplot as plt
+import matplotlib.lines as mlines
 
 import numpy as np
 import hydra
@@ -23,6 +26,8 @@ from core.utils.cvrp import CVRP
 from core.data_processing.data_utils import dict_to_instance
 from core.cvrp_solvers.heuristics import heu_solve_HGS_VRPTW
 from core.cvrp_solvers.heuristics import heu_solve_HGS_VRP
+
+
 
 
 def _import_cvrpTW_via_VRP_Easy():
@@ -479,10 +484,64 @@ def generate_directed_solution_TW(instances_path, new_instance_path):
 # CVRPTW restricted
 # ---------------------------------------------------------------------------
 
-def generate_cvrptw_restricted(instances_path, new_instance_path, horizon=1000.0,
+def plot_study_CVRPTW_vs_CVRP_generation(nb_common_arcs_dict, relative_cost_gap_dict):
+    # Consistent ordering
+    keys = list(nb_common_arcs_dict.keys())
+    x = range(len(keys))
+
+    # Extract values
+    nb_vals = [nb_common_arcs_dict[k][1] for k in keys]
+    nb_types = [nb_common_arcs_dict[k][0] for k in keys]
+    nb_status = [nb_common_arcs_dict[k][2] for k in keys]
+    nb_new_routes = [nb_common_arcs_dict[k][3] for k in keys]
+
+    cost_vals = [relative_cost_gap_dict[k][1] for k in keys]
+    cost_types = [relative_cost_gap_dict[k][0] for k in keys]
+    cost_status = [relative_cost_gap_dict[k][2] for k in keys]
+    cost_new_routes = [relative_cost_gap_dict[k][3] for k in keys]
+
+    # Create figure
+    fig, ax1 = plt.subplots(figsize=(12, 6))
+
+    # ---- LEFT AXIS (nb_common_arcs) ----
+    ax1.plot(x, nb_vals, color='blue', label='nb_common_arcs (curve)')
+    for i in x:
+        marker = 'o' if nb_types[i] else 'x'
+        ax1.scatter(i, nb_vals[i], color='blue', marker=marker)
+        ax1.text(i, nb_vals[i] + 0.003, str(cost_new_routes[i]), ha='center', va='top', fontsize=9)
+    ax1.set_xlabel("Instance index")
+    ax1.set_ylabel("nb_common_arcs", color='blue')
+    ax1.tick_params(axis='y', labelcolor='blue')
+
+    # ---- RIGHT AXIS (relative_cost_gap) ----
+    ax2 = ax1.twinx()
+    ax2.plot(x, cost_vals, color='red', label='relative_cost_gap (curve)')
+    for i in x:
+        marker2 = 'o' if cost_types[i] else 'x'
+        ax2.scatter(i, cost_vals[i], color='red', marker=marker2)
+        ax2.text(i, cost_vals[i] - 0.0002, str(cost_status[i]), ha='center', va='top', fontsize=9)
+
+    ax2.set_ylabel("relative_cost_gap", color='red')
+    ax2.tick_params(axis='y', labelcolor='red')
+
+    # ---- LEGEND FOR CURVES + MARKERS ----
+    curve_legend = ax1.legend(loc='upper left')
+
+    large_tw_marker = mlines.Line2D([], [], color='black', marker='o', linestyle='None', label='Large TW')
+    narrow_tw_marker = mlines.Line2D([], [], color='black', marker='x', linestyle='None', label='Narrow TW')
+
+    ax1.legend(handles=[large_tw_marker, narrow_tw_marker], loc='upper right')
+
+    plt.title("nb_common_arcs (left axis) vs relative_cost_gap (right axis)")
+    plt.grid(True)
+    plt.tight_layout()
+    plt.show()
+
+
+def generate_cvrptw_restricted(instances_path, new_instance_path,
     width_min_prob_large=0.66, width_max_prob_large=0.9, width_min_prob_narrow=0.1,
-    width_max_prob_narrow=0.3, speed = 13.9, service_time=30, seed=0, HGS_runtime=1000,
-    start=0, end=10, undirected=True, ready_time_init=0, solve_exact=False, exact_time_limit=False):
+    width_max_prob_narrow=0.3, speed = 13.9/1000, service_time=30, seed=0, HGS_runtime=1000,
+    start=0, end=10, ready_time_init=0, solve_exact=False, exact_time_limit=100):
     """Augment any CVRP instance set with random time windows and solve via HGS.
 
     The source CVRP graph is undirected; CVRPTW requires directed arcs, so the
@@ -490,21 +549,6 @@ def generate_cvrptw_restricted(instances_path, new_instance_path, horizon=1000.0
     the new instance.
     """
 
-
-    choose_type_window = np.random.rand() > 0.5
-    if choose_type_window: #1 corresponds to large windows
-        width_min_prob = width_min_prob_large
-        width_max_prob = width_max_prob_large
-    else:
-        width_min_prob = width_min_prob_narrow
-        width_max_prob = width_max_prob_narrow
-
-    print("width_min_prob = ", width_min_prob, ", width_max_prob = ",
-    width_max_prob, ", service_time = ", service_time, ", speed = ", speed, "seed = ", seed)
-    rng = np.random.default_rng(seed)
-
-    if width_min_prob <= 0 or width_max_prob < width_min_prob:
-        raise ValueError("Invalid time window width range.")
 
     os.makedirs(new_instance_path, exist_ok=True)
 
@@ -521,14 +565,45 @@ def generate_cvrptw_restricted(instances_path, new_instance_path, horizon=1000.0
     selected_files = all_files[start:end]
 
     print(f"Processing files {start} to {end-1} (total {len(selected_files)})")
+    nb_common_arc_dict = {}
+    relative_cost_gap_dict = {}
 
     for instance_file in selected_files:
+            
+            print("instance_file : ", instance_file)
+            
             
             with gzip.open(instances_path +"/" + instance_file, "rb") as f:
                 result_dict = pkl.load(f)
 
+            rng = np.random.default_rng(seed)
 
-            copy_instance, _ = dict_to_instance(result_dict)
+            nums = re.findall(r"\d+", instance_file)
+
+            num1 = nums[-2]   
+            num2 = nums[-1]   
+            concat_name = num1 + num2
+
+            rng_type_window = np.random.default_rng(int(concat_name))
+
+            choose_type_window = rng_type_window.random() > 0.5
+            if choose_type_window: #1 corresponds to large windows
+                width_min_prob = width_min_prob_large
+                width_max_prob = width_max_prob_large
+            else:
+                width_min_prob = width_min_prob_narrow
+                width_max_prob = width_max_prob_narrow
+
+            print("width_min_prob = ", width_min_prob, ", width_max_prob = ",
+            width_max_prob, ", service_time = ", service_time, ", speed = ", speed, "seed = ", seed,
+            "choose_type_window = ", choose_type_window)
+
+
+            if width_min_prob <= 0 or width_max_prob < width_min_prob:
+                raise ValueError("Invalid time window width range.")
+
+
+            copy_instance, solution = dict_to_instance(result_dict)
 
             max_distance = 0
 
@@ -536,20 +611,27 @@ def generate_cvrptw_restricted(instances_path, new_instance_path, horizon=1000.0
 
             depot_node_time = {}
 
+            new_solution_dict = {}
+
+            total_cost =  0
+            nb_original_routes = 0
             for k, (u,v) in enumerate(zip(copy_instance.arc_index[0], copy_instance.arc_index[1])):
+                new_solution_dict[(u,v)] = solution[(u,v)]
+                new_solution_dict[(v,u)] = solution[(u,v)]
                 if(u==0):
-                    depot_node_time[v]=copy_instance.arc_costs[k]
+                    depot_node_time[v]=math.ceil(copy_instance.arc_costs[k]/speed)
+                    nb_original_routes += solution[(u,v)]
                     if copy_instance.arc_costs[k]> max_distance:
                         max_distance = copy_instance.arc_costs[k]
                     if copy_instance.arc_costs[k] < min_distance:
                         min_distance = copy_instance.arc_costs[k]
 
-
+            nb_original_routes = nb_original_routes/2
             mean_travelling_time = np.mean(copy_instance.arc_costs)/speed
 
             print("mean_travelling_time : ", mean_travelling_time)
-            min_duration = min_distance//speed
-            max_duration = max_distance//speed
+            min_duration = math.ceil(min_distance/speed)
+            max_duration = math.ceil(max_distance/speed)
 
             print("max_duration = ", max_duration)
             print("min_duration = ", min_duration)
@@ -557,14 +639,28 @@ def generate_cvrptw_restricted(instances_path, new_instance_path, horizon=1000.0
 
             # horizon = int(2*max_duration
             # + sum([node.demand for node in copy_instance.nodes])/copy_instance.vehicle_capacity * (service_time + mean_travelling_time))
-            horizon = int(2*max_duration + 
-                          int(copy_instance.vehicle_capacity/sum([node.demand for node in copy_instance.nodes])/len(copy_instance.nodes))
-                          *(mean_travelling_time+service_time)) + ready_time_init # by default ready_time=0
+            demands = [node.demand for node in copy_instance.nodes]
+            prod_after_first = np.prod(demands[1:])
 
+            if prod_after_first == 1:
+                aver_nb_customer = copy_instance.vehicle_capacity
+            else:
+                aver_nb_customer = math.ceil(copy_instance.vehicle_capacity/sum([node.demand for node in copy_instance.nodes])*(len(copy_instance.nodes)-1))
+
+            horizon = math.ceil(2*max_duration + 
+                          aver_nb_customer
+                          *(mean_travelling_time + service_time)) + ready_time_init # by default ready_time_init=0
+            
+
+            print("average nb customers : ", aver_nb_customer)
             print("horizon : ", horizon)
 
             width_min = width_min_prob*horizon
             width_max = width_max_prob*horizon
+
+            width_mean = (width_max+width_min)/2
+            width_sd = (width_max-width_min)/np.sqrt(12)
+
             new_cvrptw_nodes = []
             i=0
             for node in copy_instance.nodes:
@@ -574,17 +670,20 @@ def generate_cvrptw_restricted(instances_path, new_instance_path, horizon=1000.0
                 if node.demand == 0:
                     ready_time = ready_time_init
                     due_time = int(horizon)
-                    service_time = 0.0
+                    new_cvrptw_nodes.append(CVRP_node(idx, d, x, y, ready_time, due_time, 0))
+
                 else:
                     center= rng.uniform(depot_node_time[node.node_id] + ready_time_init,
                                              horizon- depot_node_time[node.node_id]-service_time) #symmetric arcs
-                    w = rng.uniform(width_min, width_max)
-                    ready_time = int(center - w/2)
-                    due_time = int(center + w/2)
+                    w = max(rng.normal(width_mean, width_sd), service_time/2)
 
-                    print("node : ", i, ", width: ", w, ", ready_time : ", ready_time, ", due_time : ", due_time)
+                    ready_time = max(int(center - w), ready_time_init)
+                    due_time = min(int(center + w), horizon)
+
+                    # print("node : ", i,", center : ", center, ", width: ", w, ", ready_time : ", ready_time, ", due_time : ", due_time)
+                    new_cvrptw_nodes.append(CVRP_node(idx, d, x, y, ready_time, due_time, service_time))
+
                 i +=1
-                new_cvrptw_nodes.append(CVRP_node(idx, d, x, y, ready_time, due_time, float(service_time)))
 
 
             # CVRPTW is directed: duplicate every arc with its reverse so that
@@ -607,12 +706,12 @@ def generate_cvrptw_restricted(instances_path, new_instance_path, horizon=1000.0
 
 
             new_instance = CVRP(new_cvrptw_nodes, directed_arc_index,
-            copy_instance.vehicle_capacity, directed_arc_costs // speed, copy_instance.nb_vehicles)
+            copy_instance.vehicle_capacity, np.ceil(directed_arc_costs/speed), copy_instance.nb_vehicles)
 
             relevant_connections = [True for k in range(len(new_instance.arc_costs))]
-            cvrptw_solution, cost, feasibility_test, _, _ = heu_solve_HGS_VRPTW(new_instance.nodes, new_instance.arc_index,
+            cvrptw_solution, best_cost, _, feasibility_test, _, _ = heu_solve_HGS_VRPTW(new_instance.nodes, new_instance.arc_index,
                             new_instance.arc_costs, new_instance.nb_vehicles, new_instance.vehicle_capacity,
-                            relevant_connections, heu_time = HGS_runtime, undirected=undirected)
+                            relevant_connections, heu_time = HGS_runtime)
 
             if feasibility_test :
                 runtime  = 0
@@ -620,7 +719,7 @@ def generate_cvrptw_restricted(instances_path, new_instance_path, horizon=1000.0
                 if solve_exact:
 
                     cvrpTW_via_VRP_Easy = _import_cvrpTW_via_VRP_Easy()
-                    cvrptw_solution, runtime, solver_value, lower_bound, status, build_solver_runtime = cvrpTW_via_VRP_Easy(
+                    cvrptw_solution_temp, runtime, solver_value, lower_bound, status, build_solver_runtime = cvrpTW_via_VRP_Easy(
                         new_instance.nodes,
                         new_instance.arc_index,
                         new_instance.arc_costs,
@@ -629,19 +728,226 @@ def generate_cvrptw_restricted(instances_path, new_instance_path, horizon=1000.0
                         relevant_connections,
                         False,
                         time_limit=exact_time_limit,
-                        upper_bound=cost
+                        upper_bound=best_cost
                     )
+
+                    if solver_value>0:
+                        cvrptw_solution = cvrptw_solution_temp
+                        best_cost = solver_value
+
+
+
+                nb_common_arc=0
+                nb_original_activated_arc = 0
+                nb_new_routes = 0
+
+                for k, arc in enumerate(cvrptw_solution.keys()):
+                    nb_original_activated_arc += new_solution_dict[arc]
+                    total_cost += new_instance.arc_costs[k]*new_solution_dict[arc]
+                    if cvrptw_solution[arc]==new_solution_dict[arc] and cvrptw_solution[arc]==1:
+                        nb_common_arc +=1
+                    if arc[0]==0 and cvrptw_solution[arc]==1:
+                        nb_new_routes +=1
+
+                total_cost = total_cost/2
+                nb_original_activated_arc = nb_original_activated_arc/2
+                relative_original_cost_gap = (best_cost-total_cost)/total_cost
+                relative_nb_new_route = (nb_new_routes-nb_original_routes)/nb_original_routes
+
+                print("nb_new_routes = ", nb_new_routes)
+                print("nb_original_routes = ", nb_original_routes)
+
+                print("original_total_cost = ", total_cost)
+                print("relative original cost gap = ", relative_original_cost_gap)
+                print("relative_nb_common_arc = ", nb_common_arc/nb_original_activated_arc)
+                print("relative_nb_new_route = ", relative_nb_new_route)
+
+
+
+                nb_common_arc_dict[instance_file] = (choose_type_window,nb_common_arc/nb_original_activated_arc,status, relative_nb_new_route )
+                relative_cost_gap_dict[instance_file] = (choose_type_window, relative_original_cost_gap, status, relative_nb_new_route)
 
                 sample = {
                     "instance": new_instance.to_dict(),
                     "solution": cvrptw_solution,
                     "runtime": HGS_runtime + runtime,
+                    "large_window": choose_type_window,
                     "opt_gap": None,
                     "opt_status": status,
+                    "relative_nb_common_arcs": nb_common_arc/nb_original_activated_arc,
+                    "relative_original_cost_gap": relative_original_cost_gap
                 }
                 new_path = f"{new_instance_path}/" + "cvrptw_" + instance_file
                 with gzip.open(new_path, "wb") as f:
                     pkl.dump(sample, f)
+
+    # print("nb_common_arcs_dict : ", nb_common_arc_dict)
+    # print("relative_cost_gap_dict : ", relative_cost_gap_dict)
+
+    # plot_study_CVRPTW_vs_CVRP_generation(nb_common_arc_dict, relative_cost_gap_dict)
+
+    return nb_common_arc_dict, relative_cost_gap_dict
+
+def plot_CVRPTW_comparison(comparison_dict):
+
+
+    # Prepare x-axis
+    keys = list(comparison_dict.keys())
+    x = np.arange(len(keys))
+
+    # Storage for TRUE curves
+    nb_true_means = []
+    nb_true_stds = []
+
+    routes_true_means = []
+    routes_true_stds = []
+
+    cost_true_means = []
+    cost_true_stds = []
+
+    # Storage for FALSE curves
+    nb_false_means = []
+    nb_false_stds = []
+
+    routes_false_means = []
+    routes_false_stds = []
+
+    cost_false_means = []
+    cost_false_stds = []
+
+    # Extract values
+    for key in keys:
+        true_tuple, false_tuple = comparison_dict[key]
+
+        # TRUE
+        nb_true_mean, nb_true_std = true_tuple[0]
+        routes_true_mean, routes_true_std = true_tuple[1]
+        cost_true_mean, cost_true_std = true_tuple[2]
+
+        nb_true_means.append(nb_true_mean)
+        nb_true_stds.append(nb_true_std)
+
+        routes_true_means.append(routes_true_mean)
+        routes_true_stds.append(routes_true_std)
+
+        cost_true_means.append(cost_true_mean)
+        cost_true_stds.append(cost_true_std)
+
+        # FALSE
+        nb_false_mean, nb_false_std = false_tuple[0]
+        routes_false_mean, routes_false_std = false_tuple[1]
+        cost_false_mean, cost_false_std = false_tuple[2]
+
+        nb_false_means.append(nb_false_mean)
+        nb_false_stds.append(nb_false_std)
+
+        routes_false_means.append(routes_false_mean)
+        routes_false_stds.append(routes_false_std)
+
+        cost_false_means.append(cost_false_mean)
+        cost_false_stds.append(cost_false_std)
+
+    # Create figure with two subplots
+    fig, (ax_true, ax_false) = plt.subplots(2, 1, figsize=(14, 10), sharex=True)
+
+    # -------------------- TRUE PLOT --------------------
+    ax_true.errorbar(x, nb_true_means, yerr=nb_true_stds, fmt='-o', label='Common arcs (TRUE)')
+    ax_true.errorbar(x, routes_true_means, yerr=routes_true_stds, fmt='-s', label='Relative routes (TRUE)')
+    ax_true.errorbar(x, cost_true_means, yerr=cost_true_stds, fmt='-^', label='Cost relative gap (TRUE)')
+
+    ax_true.set_title("TRUE category")
+    ax_true.set_ylabel("Values")
+    ax_true.grid(True)
+    ax_true.legend()
+
+    # -------------------- FALSE PLOT --------------------
+    ax_false.errorbar(x, nb_false_means, yerr=nb_false_stds, fmt='-o', label='Common arcs (FALSE)')
+    ax_false.errorbar(x, routes_false_means, yerr=routes_false_stds, fmt='-s', label='Relative routes (FALSE)')
+    ax_false.errorbar(x, cost_false_means, yerr=cost_false_stds, fmt='-^', label='Cost relative gap (FALSE)')
+
+    ax_false.set_title("FALSE category")
+    ax_false.set_ylabel("Values")
+    ax_false.grid(True)
+    ax_false.legend()
+
+    # X-axis labels = keys
+    plt.xticks(x, [str(k) for k in keys], rotation=45, ha='right')
+
+    plt.xlabel("Category (key)")
+    plt.tight_layout()
+    plt.show()
+
+
+                
+def comparison_CVRPTW_generation(instances_path, new_instance_path,
+    width_min_prob_large_list=[0.66], width_max_prob_large_list=[0.9],
+    width_min_prob_narrow_list=[0.1], width_max_prob_narrow_list=[0.3],
+    speed = 13.9/1000, service_time=30, seed=0, HGS_runtime=1000,
+    start=0, end=10, ready_time_init=0, solve_exact=False, exact_time_limit=100):
+
+    comparison_dict = {}
+
+    for i in range(len(width_max_prob_large_list)):
+        width_max_prob_large = width_max_prob_large_list[i]
+        width_min_prob_large = width_min_prob_large_list[i]
+        width_max_prob_narrow = width_max_prob_narrow_list[i]
+        width_min_prob_narrow = width_min_prob_narrow_list[i]
+
+
+        nb_common_arcs_dict, relative_cost_gap_dict = generate_cvrptw_restricted(instances_path, new_instance_path,
+        width_min_prob_large=width_min_prob_large, width_max_prob_large=width_max_prob_large,
+        width_min_prob_narrow=width_min_prob_narrow, width_max_prob_narrow=width_max_prob_narrow,
+        speed = speed, service_time=service_time, seed=seed, HGS_runtime=HGS_runtime,
+        start=start, end=end, ready_time_init=ready_time_init, solve_exact=solve_exact,
+        exact_time_limit=exact_time_limit)
+
+        keys = list(nb_common_arcs_dict.keys())
+
+        # Extract values
+        nb_types = [nb_common_arcs_dict[k][0] for k in keys]
+        nb_vals = [nb_common_arcs_dict[k][1] for k in keys]
+        nb_new_routes = [nb_common_arcs_dict[k][3] for k in keys]
+        cost_vals = [relative_cost_gap_dict[k][1] for k in keys]
+
+
+        # Indices for each type
+        idx_true  = [i for i in range(len(nb_types)) if nb_types[i]]
+        idx_false = [i for i in range(len(nb_types)) if not nb_types[i]]
+
+        # TRUE group
+        nb_true_vals        = np.array([nb_vals[i] for i in idx_true])
+        nb_true_new_routes  = np.array([nb_new_routes[i] for i in idx_true])
+        cost_true_vals      = np.array([cost_vals[i] for i in idx_true])
+
+        summary_true = (
+            (nb_true_vals.mean(),       nb_true_vals.std()),
+            (nb_true_new_routes.mean(), nb_true_new_routes.std()),
+            (cost_true_vals.mean(),     cost_true_vals.std())
+        )
+
+        # FALSE group
+        nb_false_vals        = np.array([nb_vals[i] for i in idx_false])
+        nb_false_new_routes  = np.array([nb_new_routes[i] for i in idx_false])
+        cost_false_vals      = np.array([cost_vals[i] for i in idx_false])
+
+        summary_false = (
+            (nb_false_vals.mean(),       nb_false_vals.std()),
+            (nb_false_new_routes.mean(), nb_false_new_routes.std()),
+            (cost_false_vals.mean(),     cost_false_vals.std())
+        )
+
+        # Final structure
+        result = [summary_true, summary_false]
+
+        comparison_dict[(width_min_prob_large, width_max_prob_large,
+                        width_min_prob_narrow, width_max_prob_narrow)] = result
+        
+    print(comparison_dict)
+    return comparison_dict
+
+
+
+
 
 
 # ---------------------------------------------------------------------------
@@ -963,6 +1269,8 @@ def split_dataset(
     print(f"Data written to: {new_data_folder}")
 
 
+
+
 # ---------------------------------------------------------------------------
 # Hydra entry point
 # ---------------------------------------------------------------------------
@@ -978,14 +1286,68 @@ def main(data_generation_config: DictConfig) -> None:
     """Hydra entry point: dispatches to the configured sample-generation routine."""
 
 
-    data_path = data_generation_config.data_path
-    seed = data_generation_config.seed
-    nb_clients = data_generation_config.nb_clients
-    nb_instances = data_generation_config.nb_instances
-    save_path = data_generation_config.save_path
+    instance_type = data_generation_config.instance_type
 
-    instance_path = generate_CVRP_LIB_instances(data_path, nb_clients, seed, nb_instances)
-    samples_generation_CVRP_literature(instance_path, save_path, HGS_time_limit=100)
+    seed = data_generation_config.seed
+    HGS_runtime = data_generation_config.HGS_runtime
+
+    if instance_type == "CVRP":
+        print("here CVRP")
+        data_path = data_generation_config.data_path
+        nb_clients = data_generation_config.nb_clients
+        nb_instances = data_generation_config.nb_instances
+        save_path = data_generation_config.save_path
+        instance_path = generate_CVRP_LIB_instances(data_path, nb_clients, seed, nb_instances)
+        samples_generation_CVRP_literature(instance_path, save_path, HGS_time_limit=HGS_runtime)
+   
+    elif instance_type == "CVRPTW":
+        print("here CVRPTW")
+        instances_path = data_generation_config.instances_path
+        new_instance_path = data_generation_config.new_instance_path
+        width_min_prob_large = data_generation_config.width_min_prob_large
+        width_max_prob_large =  data_generation_config.width_max_prob_large
+        width_min_prob_narrow = data_generation_config.width_min_prob_narrow
+        width_max_prob_narrow = data_generation_config.width_max_prob_narrow
+        speed = data_generation_config.speed
+        service_time = data_generation_config.service_time
+        start = data_generation_config.start
+        end = data_generation_config.end
+        ready_time_init = data_generation_config.ready_time_init
+        solve_exact = data_generation_config.solve_exact
+        exact_time_limit = data_generation_config.exact_time_limit
+
+        # generate_cvrptw_restricted(instances_path, new_instance_path,
+        # width_min_prob_large=width_min_prob_large, width_max_prob_large=width_max_prob_large,
+        # width_min_prob_narrow=width_min_prob_narrow, width_max_prob_narrow=width_max_prob_narrow,
+        # speed = speed, service_time=service_time, seed=seed, HGS_runtime=HGS_runtime,
+        # start=start, end=end, ready_time_init=ready_time_init, solve_exact=solve_exact,
+        # exact_time_limit=exact_time_limit)
+
+        # width_min_prob_large_list = [0.07, 0.1, 0.2, 0.3]
+        # width_max_prob_large_list = [0.09, 0.2, 0.3, 0.4]
+        # width_min_prob_narrow_list = [0.01, 0.02, 0.03, 0.05]
+        # width_max_prob_narrow_list = [0.02, 0.03, 0.05, 0.07]
+        
+        width_min_prob_large_list = [width_min_prob_large]
+        width_max_prob_large_list = [width_max_prob_large]
+        width_min_prob_narrow_list = [width_min_prob_narrow]
+        width_max_prob_narrow_list = [width_max_prob_narrow]
+
+
+
+        comparison_dict = comparison_CVRPTW_generation(instances_path, new_instance_path,
+        width_min_prob_large_list=width_min_prob_large_list,
+        width_max_prob_large_list=width_max_prob_large_list,
+        width_min_prob_narrow_list=width_min_prob_narrow_list,
+        width_max_prob_narrow_list=width_max_prob_narrow_list,
+        speed = speed, service_time=service_time, seed=seed, HGS_runtime=HGS_runtime,
+        start=start, end=end, ready_time_init=ready_time_init, solve_exact=solve_exact,
+        exact_time_limit=exact_time_limit)
+
+        # plot_CVRPTW_comparison(comparison_dict=comparison_dict)
+    
+    else:
+        raise ValueError
 
 
 

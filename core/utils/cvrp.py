@@ -8,37 +8,66 @@ import numpy as np
 
 
 class CVRP_node:
-    """Class representing node for CVRP instances
+
+    """Class representing a node for CVRP / CVRPTW instances.
+
+    This class is intentionally designed to be backward-compatible:
+    - For classical CVRP instances, time window attributes can be left unset.
+    - For CVRPTW instances, time window attributes are provided and consumed
+      by downstream components (e.g., feature extraction or optimization).
 
     Attributes
     ----------
 
-    node_id: int
-        Node id.
-    demand: float
-        Node demand.
-    x: float
-        Node x-coordinate.
-    y: float
-        Node y-coordinate    
+    node_id : int
+        Unique identifier of the node.
+    demand : float
+        Demand associated with the node.
+    x : float, optional
+        X-coordinate of the node.
+    y : float, optional
+        Y-coordinate of the node.
+    ready_time : float, optional
+        Earliest time at which service at the node can start (a_i).
+        If None, the node is treated as having no time window.
+    due_time : float, optional
+        Latest time at which service at the node can start (b_i).
+        If None, the node is treated as having no time window.
+    service_time : float
+        Service duration at the node (s_i). Defaults to 0.0. 
 
     """
 
     def __init__(
-            self,
-            node_id,
-            demand,
-            x = None,
-            y = None
+        self,
+        node_id,
+        demand,
+        x=None,
+        y=None,
+        ready_time=None,
+        due_time=None,
+        service_time=0.0,
     ):
         self.node_id = node_id
         self.demand = demand
         self.x = x
         self.y = y
 
+        # Time window attributes (optional)
+        self.ready_time = ready_time
+        self.due_time = due_time
+        self.service_time = service_time
+
     def to_dict(self):
-        attributes = vars(self)
-        return attributes
+        """Convert node attributes to dictionary representation.
+
+        Returns
+        -------
+        dict
+            Dictionary containing all node attributes. Optional time window
+            fields are included only if present.
+        """
+        return vars(self)
     
     
 

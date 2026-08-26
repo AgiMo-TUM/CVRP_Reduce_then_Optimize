@@ -61,7 +61,6 @@ The active routine in `02_generate_samples.py` re-solves an existing CVRP `.pkl.
 
 Example:
 ```bash
-# Re-solve a slice of existing CVRP samples with a shorter HGS budget
 python scripts/01_data/02_generate_samples.py \
   --config-path ../../configs/data_generation \
   --config-name config \
@@ -70,6 +69,31 @@ python scripts/01_data/02_generate_samples.py \
   seed=1 \
   nb_instances=10 
 ```
+
+For CVRPTW instances :
+
+```bash
+python scripts/01_data/02_generate_samples.py \
+  --config-path ../../configs/data_generation \
+  --config-name config \
+  seed=1 \
+  instances_path="data/XML_split/test" \
+  new_instance_path="data/XML_TW_first_test" \
+  width_min_prob_large=0.1 \
+  width_max_prob_large=0.15 \
+  width_min_prob_narrow=0.01 \
+  width_max_prob_narrow=0.03 \
+  speed=50 \
+  service_time=1 \
+  start=0 \
+  end=100 \
+  ready_time_init=0 \
+  solve_exact=False \
+  exact_time_limit=100 \
+  instance_type="CVRPTW" \
+  HGS_runtime=5
+```
+
 
 I/O paths come from `configs/training/config.yaml` (`samples_input_dir`, `samples_output_dir`). The slice is controlled by `num_samples` (start) and `max_iterations_FW` (end); `regul_lambda` is the HGS time budget in seconds.
 
@@ -95,7 +119,7 @@ PYTHONPATH=$PWD python scripts/02_training_and_evaluation/01_train_sol_edge_pred
   model.hidden_layer_dim=20 \
   out_dir=trained_models \
   seed=0 \
-  cross_validate=true \
+  cross_validate=false \
   num_samples=1000 \
   train_batch_size=32 \
   directed=false \

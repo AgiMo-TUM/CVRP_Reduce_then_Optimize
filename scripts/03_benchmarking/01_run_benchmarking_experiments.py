@@ -1,4 +1,4 @@
-""" Benchmark FCTP algorithms. """
+""" Benchmark CVRP algorithms. """
 
 from datetime import datetime
 import gzip
@@ -19,13 +19,13 @@ import gc
 
 from core.data_processing.data_utils import load_instance
 from core.utils.utils import flatten_dict
-from core.evaluation.benchmarking_utils import get_performance_table
+# from core.evaluation.benchmarking_utils import get_performance_table
 
-from core.cvrp_solvers.ip_grb import sol_vals
-from core.cvrp_solvers.ip_grb import cvrp
+# from core.cvrp_solvers.ip_grb import sol_vals
+# from core.cvrp_solvers.ip_grb import cvrp
 from core.ml_models.wrapper import ml_based_cvrp_reduction
 from core.utils.ml_utils import load_arc_predictor_model
-from core.cvrp_solvers.heuristics import heu_solve_HGS_VRP
+# from core.cvrp_solvers.heuristics import heu_solve_HGS_VRP
 
 
 def get_k_vals(size_thresholds, m, n):
@@ -75,7 +75,7 @@ def save_results(path, result_dict):
 
 @hydra.main(
     version_base=None,
-    config_path="configs/benchmarking",
+    config_path=r"C:\Users\bapti\Documents\VS_code_projects\CVRP_Reduce_then_Optimize\configs\benchmarking",
     config_name="config",
 )
 
@@ -144,6 +144,10 @@ def main(cfg: DictConfig) -> None:
     threshold_recall_dict = {}
     recall_standard_method_dict = {}
     test_performance_dict={}
+    dict_perf_clust = {}
+    dict_perf_clust["relative_cost_gap"] = []
+    dict_perf_clust["list_runtimes"] = []
+    dict_perf_clust["exact_runtime"] = []
     for counter, instance_path in enumerate(instance_paths):
 
         if(counter < start_index or counter > end_index):
@@ -219,6 +223,10 @@ def main(cfg: DictConfig) -> None:
                 thresholds = cfg.method.size_threshold
             elif threshold_type == "prob":
                 thresholds = cfg.method.prob_threshold
+            elif threshold_type =="top_k":
+                thresholds = cfg.method.top_k_threshold
+            elif threshold_type == "cluster":
+                thresholds = cfg.method.nb_clusters
             else:
                 raise ValueError
             
@@ -270,10 +278,15 @@ def main(cfg: DictConfig) -> None:
                     completion_heu_time=cfg.completion_heu_time,
                     instance_log_HGS_dict=instance_log_HGS_dict,
                     is_time_windows=False,
-                    pyvrp_version=cfg.pyvrp_version,
+                    pyvrp_version=exact_objective_value,
+                    dict_perf_clust=dict_perf_clust,
+                    nb_clusters=thrsh
                 )
                 print("completion_runtime : ", completion_runtime)
                 runtime = time() - start + features_computation_time
+
+
+
                 result_dict_k = result_dict.copy()
                 result_dict_k.update(
                     {
@@ -307,12 +320,39 @@ def main(cfg: DictConfig) -> None:
                     str(thrsh),
                 )
                 os.makedirs(solution_path, exist_ok=True)
-                save_results(
-                    os.path.join(solution_path, solution_filename), result_dict_k
-                )
+                # save_results(
+                #     os.path.join(solution_path, solution_filename), result_dict_k
+                # )
                 logger.info(
                     f"done_{solver_runtime}_{solver_value}"
                 )
+
+    print("dict_perf_clust : ", dict_perf_clust)
+    # Extract data
+    # cost_gap = np.array(dict_perf_clust['relative_cost_gap'])
+    # runtime = np.array(dict_perf_clust['relative_runtime'])
+    # x = np.arange(len(cost_gap))
+
+    # # Create figure
+    # fig, ax1 = plt.subplots(figsize=(10, 5))
+
+    # # Left axis: cost gap
+    # ax1.plot(x, cost_gap, color="navy", marker="o", label="Relative Cost Gap")
+    # ax1.set_ylabel("Relative Cost Gap", color="navy")
+    # ax1.tick_params(axis="y", labelcolor="navy")
+
+    # # Right axis: runtime
+    # ax2 = ax1.twinx()
+    # ax2.plot(x, runtime, color="darkred", marker="s", label="Relative Runtime")
+    # ax2.set_ylabel("Relative Runtime", color="darkred")
+    # ax2.tick_params(axis="y", labelcolor="darkred")
+
+    # # Title + x-axis
+    # plt.title("Cluster Performance: Cost Gap vs Runtime")
+    # ax1.set_xlabel("Cluster Index")
+
+    # plt.tight_layout()
+    # plt.show()
 
 
             

@@ -3,3 +3,19 @@ save_path: "data/default_folder_samples"
 seed: 0
 nb_clients: 20
 nb_instances: 10
+
+instance_type: "CVRP"
+instances_path: "data/default_folder"
+new_instance_path: "data/default_folder_samples"
+width_min_prob_large: 0.66
+width_max_prob_large:  0.9
+width_min_prob_narrow: 0.1
+width_max_prob_narrow: 0.3
+speed: 13.9
+service_time: 120
+HGS_runtime: 1000
+start: 0
+end: 5
+ready_time_init: 0
+solve_exact: False
+exact_time_limit: 100

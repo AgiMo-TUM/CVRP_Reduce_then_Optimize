@@ -2326,7 +2326,7 @@ def load_arc_predictor_model(model_path, get_feature_fun=True, get_label_fun=Fal
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    chkpnt = torch.load(model_path, map_location="cpu")
+    chkpnt = torch.load(model_path, map_location="cpu", weights_only=False)
     model_config = chkpnt["model_config"]
     model_state = chkpnt["state_dict"]
     normalizer_state = chkpnt["normalizers"]

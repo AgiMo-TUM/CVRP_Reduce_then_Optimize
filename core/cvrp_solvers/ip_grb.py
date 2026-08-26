@@ -6,7 +6,7 @@
 
 import random
 
-import gurobipy as gp
+# import gurobipy as gp
 import networkx as nx
 import numpy as np
 from VRPSolverEasy.src import solver
@@ -234,7 +234,7 @@ def cvrp_subset_connections(demands, arc_index, arc_costs, nb_vehicles,
 
 def cvrp_via_VRP_Easy(demands, arc_index, arc_costs, nb_vehicles,
                             vehicle_capacity, connections, time_limit=5000,
-                            upper_bound=None):
+                            upper_bound=None, cluster=None):
     
     start_time = time()
 
@@ -264,10 +264,16 @@ def cvrp_via_VRP_Easy(demands, arc_index, arc_costs, nb_vehicles,
     # add depot
     model.add_depot(id=0)
 
-    for i in range(1, len(demands)):
-        model.add_customer(id=i,
-                           demand=int(demands[i])
-                           )
+    if cluster!=None:
+        for i in range(1, len(demands)):
+            model.add_customer(id=cluster[i],
+                            demand=int(demands[i])
+                            )
+    else:
+        for i in range(1, len(demands)):
+            model.add_customer(id=i,
+                            demand=int(demands[i])
+                            )
         
     for arc in arc_list:
         model.add_link(start_point_id=arc[0],
@@ -276,43 +282,43 @@ def cvrp_via_VRP_Easy(demands, arc_index, arc_costs, nb_vehicles,
                        )
         
     # model.set_parameters(print_level=-2)
-    if upper_bound!= None:
-        print("upper_bound = ", upper_bound)
-        model.set_parameters(time_limit=time_limit,
-                         solver_name="CPLEX", print_level=-2, upper_bound=upper_bound)
-    else:
-        model.set_parameters(time_limit=time_limit,
-                         solver_name="CPLEX", print_level=-2)
+    # if upper_bound!= None:
+    #     print("upper_bound = ", upper_bound)
+    #     model.set_parameters(time_limit=time_limit,
+    #                      solver_name="CPLEX", print_level=-2, upper_bound=upper_bound)
+    # else:
+    #     model.set_parameters(time_limit=time_limit,
+    #                      solver_name="CPLEX", print_level=-2)
 
-    
+    model.set_parameters(time_limit=50, print_level=-2)
     model.solve()
     build_solver_runtime  = time() - start_time
 
-    if model.solution.is_defined :
-        print(f"""Statistics :
-        best lower bound : { model.statistics.best_lb } 
+    # if model.solution.is_defined :
+    #     print(f"""Statistics :
+    #     best lower bound : { model.statistics.best_lb } 
         
-        solution time : {model.statistics.solution_time}
+    #     solution time : {model.statistics.solution_time}
         
-        number of nodes : {model.statistics.nb_branch_and_bound_nodes}
+    #     number of nodes : {model.statistics.nb_branch_and_bound_nodes}
         
-        solution value : {model.solution.value}
+    #     solution value : {model.solution.value}
 
-        root lower bound : {model.statistics.root_lb}
+    #     root lower bound : {model.statistics.root_lb}
 
-        root root time : {model.statistics.root_time}.
-        """)
-        print(f"Status : {model.status}.\n")
-        print(f"Message : {model.message}.\n")   
-        for route in model.solution.routes:            
-            print(f"Vehicle Type id : {route.vehicle_type_id}.")
-            print(f"Ids : {route.point_ids}.")
-            print(f"Load : {route.cap_consumption}.\n")
-            for i in range(len(route.point_ids) - 1):
-                if route.point_ids[i] < route.point_ids[i+1]:
-                    sol_dict[(route.point_ids[i], route.point_ids[i+1])] = 1
-                else :
-                    sol_dict[(route.point_ids[i+1], route.point_ids[i])] = 1
+    #     root root time : {model.statistics.root_time}.
+    #     """)
+    #     print(f"Status : {model.status}.\n")
+    #     print(f"Message : {model.message}.\n")   
+    #     for route in model.solution.routes:            
+    #         print(f"Vehicle Type id : {route.vehicle_type_id}.")
+    #         print(f"Ids : {route.point_ids}.")
+    #         print(f"Load : {route.cap_consumption}.\n")
+    #         for i in range(len(route.point_ids) - 1):
+    #             if route.point_ids[i] < route.point_ids[i+1]:
+    #                 sol_dict[(route.point_ids[i], route.point_ids[i+1])] = 1
+    #             else :
+    #                 sol_dict[(route.point_ids[i+1], route.point_ids[i])] = 1
     return sol_dict, model.statistics.solution_time, model.solution.value, model.statistics.best_lb, model.status, build_solver_runtime
 
 def cvrpTW_via_VRP_Easy(cvrptw_nodes, arc_index, arc_costs, nb_vehicles,
@@ -375,10 +381,16 @@ def cvrpTW_via_VRP_Easy(cvrptw_nodes, arc_index, arc_costs, nb_vehicles,
                        )
         
     # model.set_parameters(print_level=-2)
+    # if upper_bound!= None:
+    #     print("upper_bound = ", upper_bound)
+    #     model.set_parameters(time_limit=time_limit,
+    #                      solver_name="CPLEX", print_level=-2, upper_bound=upper_bound)
+    # else:
+    #     model.set_parameters(time_limit=time_limit,
+    #                      solver_name="CPLEX", print_level=-2)
     if upper_bound!= None:
         print("upper_bound = ", upper_bound)
-        model.set_parameters(time_limit=time_limit,
-                         solver_name="CPLEX", print_level=-2, upper_bound=upper_bound)
+        model.set_parameters(time_limit=time_limit, print_level=-2, upper_bound=upper_bound)
     else:
         model.set_parameters(time_limit=time_limit,
                          solver_name="CPLEX", print_level=-2)
