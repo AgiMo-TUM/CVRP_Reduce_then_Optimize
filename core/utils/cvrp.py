@@ -271,13 +271,13 @@ class CVRP:
         arc_index : 2D np.array
             List of arcs with source and destination
         vehicle_capacity: float
-            Maximum capacity of ecah vehicle.
+            Maximum capacity of each vehicle.
         arc_costs : np array
             Variable cost matrix.
         nb_vehicles : int
             Number of vehicles.
         arc_lookup : dict
-            Retrive the index of an arc with the pair (i,j)
+            Retrieve the index of an arc with the pair (i,j)
 
     """
 

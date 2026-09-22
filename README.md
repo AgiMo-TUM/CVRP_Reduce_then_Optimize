@@ -57,7 +57,7 @@ Note: If Gurobi is run with a commercial or academic license, ensure your licens
 
 ## Step 1: Data Generation
 
-The active routine in `02_generate_samples.py` re-solves an existing CVRP `.pkl.gz` sample folder with a shorter HGS budget and writes the new solutions to an output directory (auto-created with `exist_ok=True`).
+The active routine in `02_generate_samples.py` re-solves an existing CVRP `.pkl.gz` sample folder with a shorter HGS (Hybrid Genetic Search) budget and writes the new solutions to an output directory (auto-created with `exist_ok=True`).
 
 Example:
 ```bash
