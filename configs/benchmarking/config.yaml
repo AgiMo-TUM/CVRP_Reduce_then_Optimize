@@ -11,7 +11,7 @@ start: 0
 end: 5
 HGS_runtime : 100
 exact_time_limit : 5000
-completion_heu_time : 1
+completion_heu_time : 0
 
 # === Reduction / decoder backend settings (consumed by the wrapper) ===
 # NB: `cfg.decoder` is reserved for the legacy solver group (decoder/*.yaml).
@@ -23,6 +23,7 @@ threshold_type: "top_k"        # one of: "top_k", "size", "probability"
 top_k_eval: 200                # top-k arcs per instance during evaluation reduction
 size_threshold: 0.3            # used when threshold_type == "size"
 probability_threshold: 0.5     # used when threshold_type == "probability"
+pre_cached_features: False
 
 instance_dir: "data/samples_Munich_100"           # benchmark input dir (CLI-overridable)
 solution_dir: "benchmarking_smoke/output"         # benchmark output dir (auto-created)

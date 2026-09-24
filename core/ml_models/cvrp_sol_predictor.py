@@ -97,10 +97,7 @@ class BaseSolArcPredictor(BaseLearner):
 
         predictions_raw = self.model(data.x, data.edge_attr, data.edge_index)
 
-        if self.multi_class:
-            predictions = torch.nn.functional.log_softmax(predictions_raw, dim=-1)
-        else:
-            predictions = torch.sigmoid(predictions_raw)
+        predictions = torch.sigmoid(predictions_raw)
 
         return predictions_raw, predictions
 
@@ -185,12 +182,13 @@ class BaseSolArcPredictor(BaseLearner):
 class GCNNSolArcPredictor(BaseSolArcPredictor):
     """GNN-based solution-arc predictor."""
 
-    def __init__(self, model_config, directed=True, **kwargs):
+    def __init__(self, model_config, **kwargs):
         input_dims = (model_config.node_dim, model_config.arc_dim)
         hidden_dim = model_config.hidden_layer_dim
         conv_hidden_dim = model_config.get("conv_hidden_layer_dim", hidden_dim)
         num_conv_layers = model_config.num_conv_layers
         num_dense_layers = model_config.num_dense_layers
+        directed = model_config.get("directed", False)
 
         conv_dims = [(conv_hidden_dim, conv_hidden_dim) for _ in range(num_conv_layers)]
         dense_dims = [hidden_dim for _ in range(num_dense_layers)]

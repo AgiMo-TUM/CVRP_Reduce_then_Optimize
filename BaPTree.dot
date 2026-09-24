@@ -1,0 +1,22 @@
+##Command to get a nice layout: dot -Tpdf thisfile > thisfile.pdf
+
+digraph master_0_BaP_Tree {
+edge[fontname = "Courier", fontsize = 10];
+n1 [label="N_1 (21.22s) \n[605.73,611.00]"];
+n2 [label="N_2 (46.16s) \n[608.76,611.00]"];
+n1 -> n2 [ label = " VNB <= 19  " ];
+n3 [label="N_3 (51.30s) \n[606.33,611.00]"];
+n1 -> n3 [ label = " VNB >= 20  " ];
+n4 [label="N_4 (1m2s) \n[607.23,611.00]"];
+n3 -> n4 [ label = " EDGE[15,32] >= 1  " ];
+n5 [label="N_5 (1m8s) \n[606.64,611.00]"];
+n3 -> n5 [ label = " EDGE[15,32] <= 0  " ];
+n6 [label="N_6 (1m21s) \n[607.13,611.00]"];
+n5 -> n6 [ label = " EDGE[25,26] >= 1  " ];
+n7 [label="N_7 (1m25s) \n[606.97,611.00]"];
+n5 -> n7 [ label = " EDGE[25,26] <= 0  " ];
+n8 [label="N_8 (1m38s) \n[607.83,611.00]"];
+n7 -> n8 [ label = " EDGE[10,49] >= 1  " ];
+n9 [label="N_9 (1m40s) \n[607.07,611.00]"];
+n7 -> n9 [ label = " EDGE[10,49] <= 0  " ];
+}
