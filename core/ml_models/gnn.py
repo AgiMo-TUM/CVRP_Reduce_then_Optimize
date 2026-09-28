@@ -26,15 +26,14 @@ class GraphLayerAtt(torch.nn.Module):
     dims_out : tuple
         2-element tuple containing output dimension for nodes and arcs.
     directed : bool, optional
-        Selects the forward implementation. Default True.
+        Selects the forward implementation. Default False.
     weight_init_func : callable, optional
         Weight initialisation function.
     """
 
-    def __init__(self, dims_in, dims_out, directed=True, weight_init_func=None):
+    def __init__(self, dims_in, dims_out, directed=False, weight_init_func=None):
         super(GraphLayerAtt, self).__init__()
 
-        H = 4
         in_v, in_a = dims_in
         out_v, out_a = dims_out
 
@@ -171,7 +170,7 @@ class GraphNNAtt(torch.nn.Module):
     directed : bool, optional
         If True, use the asymmetric (directed) forward pass in every
         :class:`GraphLayerAtt`. If False, use the symmetric (undirected) one.
-        Default True.
+        Default False.
     weight_init_func : callable, optional
         Weight initialisation function.
     dropout : float, optional
@@ -184,9 +183,8 @@ class GraphNNAtt(torch.nn.Module):
         conv_dims,
         dense_dims,
         dim_out,
-        directed=True,
-        weight_init_func=None,
-        dropout=0.1,
+        directed=False,
+        weight_init_func=None
     ):
         super(GraphNNAtt, self).__init__()
 

@@ -1,0 +1,298 @@
+{
+ "MaxTotalVehiclesNumber": 10000,
+ "Points": [
+  {
+   "id": 0,
+   "name": "D1",
+   "idCustomer": 0,
+   "serviceTime": 0.0,
+   "twBegin": 0,
+   "twEnd": 5000,
+   "penaltyOrCost": 0.0,
+   "demandOrCapacity": 0,
+   "incompatibleVehicles": []
+  },
+  {
+   "id": 1,
+   "name": "West Virginia, USA",
+   "idCustomer": 1,
+   "serviceTime": 0.0,
+   "twBegin": 0,
+   "twEnd": 5000,
+   "penaltyOrCost": 0.0,
+   "demandOrCapacity": 500,
+   "incompatibleVehicles": []
+  },
+  {
+   "id": 2,
+   "name": "Vermont, USA",
+   "idCustomer": 2,
+   "serviceTime": 0.0,
+   "twBegin": 0,
+   "twEnd": 5000,
+   "penaltyOrCost": 0.0,
+   "demandOrCapacity": 300,
+   "incompatibleVehicles": []
+  },
+  {
+   "id": 3,
+   "name": "Texas, the USA",
+   "idCustomer": 3,
+   "serviceTime": 0.0,
+   "twBegin": 0,
+   "twEnd": 5000,
+   "penaltyOrCost": 0.0,
+   "demandOrCapacity": 600,
+   "incompatibleVehicles": []
+  },
+  {
+   "id": 4,
+   "name": "South Dakota, the US",
+   "idCustomer": 4,
+   "serviceTime": 0.0,
+   "twBegin": 0,
+   "twEnd": 5000,
+   "penaltyOrCost": 0.0,
+   "demandOrCapacity": 658,
+   "incompatibleVehicles": []
+  },
+  {
+   "id": 5,
+   "name": "Rhode Island, the US",
+   "idCustomer": 5,
+   "serviceTime": 0.0,
+   "twBegin": 0,
+   "twEnd": 5000,
+   "penaltyOrCost": 0.0,
+   "demandOrCapacity": 741,
+   "incompatibleVehicles": []
+  },
+  {
+   "id": 6,
+   "name": "Oregon, the US",
+   "idCustomer": 6,
+   "serviceTime": 0.0,
+   "twBegin": 0,
+   "twEnd": 5000,
+   "penaltyOrCost": 0.0,
+   "demandOrCapacity": 436,
+   "incompatibleVehicles": []
+  }
+ ],
+ "VehicleTypes": [
+  {
+   "id": 1,
+   "startPointId": 0,
+   "endPointId": 0,
+   "name": "VEH1",
+   "capacity": 1100,
+   "fixedCost": 0.0,
+   "varCostDist": 10,
+   "varCostTime": 0.0,
+   "maxNumber": 6,
+   "twBegin": 0.0,
+   "twEnd": 5000
+  }
+ ],
+ "Links": [
+  {
+   "startPointId": 0,
+   "endPointId": 1,
+   "name": "",
+   "isDirected": false,
+   "distance": 10.548,
+   "time": 10.548,
+   "fixedCost": 0.0
+  },
+  {
+   "startPointId": 0,
+   "endPointId": 2,
+   "name": "",
+   "isDirected": false,
+   "distance": 16.807,
+   "time": 16.807,
+   "fixedCost": 0.0
+  },
+  {
+   "startPointId": 0,
+   "endPointId": 3,
+   "name": "",
+   "isDirected": false,
+   "distance": 17.103,
+   "time": 17.103,
+   "fixedCost": 0.0
+  },
+  {
+   "startPointId": 0,
+   "endPointId": 4,
+   "name": "",
+   "isDirected": false,
+   "distance": 10.5,
+   "time": 10.5,
+   "fixedCost": 0.0
+  },
+  {
+   "startPointId": 0,
+   "endPointId": 5,
+   "name": "",
+   "isDirected": false,
+   "distance": 17.971,
+   "time": 17.971,
+   "fixedCost": 0.0
+  },
+  {
+   "startPointId": 0,
+   "endPointId": 6,
+   "name": "",
+   "isDirected": false,
+   "distance": 31.004,
+   "time": 31.004,
+   "fixedCost": 0.0
+  },
+  {
+   "startPointId": 1,
+   "endPointId": 2,
+   "name": "",
+   "isDirected": false,
+   "distance": 9.265,
+   "time": 9.265,
+   "fixedCost": 0.0
+  },
+  {
+   "startPointId": 1,
+   "endPointId": 3,
+   "name": "",
+   "isDirected": false,
+   "distance": 21.077,
+   "time": 21.077,
+   "fixedCost": 0.0
+  },
+  {
+   "startPointId": 1,
+   "endPointId": 4,
+   "name": "",
+   "isDirected": false,
+   "distance": 20.261,
+   "time": 20.261,
+   "fixedCost": 0.0
+  },
+  {
+   "startPointId": 1,
+   "endPointId": 5,
+   "name": "",
+   "isDirected": false,
+   "distance": 9.177,
+   "time": 9.177,
+   "fixedCost": 0.0
+  },
+  {
+   "startPointId": 1,
+   "endPointId": 6,
+   "name": "",
+   "isDirected": false,
+   "distance": 40.311,
+   "time": 40.311,
+   "fixedCost": 0.0
+  },
+  {
+   "startPointId": 2,
+   "endPointId": 3,
+   "name": "",
+   "isDirected": false,
+   "distance": 30.237,
+   "time": 30.237,
+   "fixedCost": 0.0
+  },
+  {
+   "startPointId": 2,
+   "endPointId": 4,
+   "name": "",
+   "isDirected": false,
+   "distance": 27.305,
+   "time": 27.305,
+   "fixedCost": 0.0
+  },
+  {
+   "startPointId": 2,
+   "endPointId": 5,
+   "name": "",
+   "isDirected": false,
+   "distance": 2.452,
+   "time": 2.452,
+   "fixedCost": 0.0
+  },
+  {
+   "startPointId": 2,
+   "endPointId": 6,
+   "name": "",
+   "isDirected": false,
+   "distance": 47.8,
+   "time": 47.8,
+   "fixedCost": 0.0
+  },
+  {
+   "startPointId": 3,
+   "endPointId": 4,
+   "name": "",
+   "isDirected": false,
+   "distance": 13.5,
+   "time": 13.5,
+   "fixedCost": 0.0
+  },
+  {
+   "startPointId": 3,
+   "endPointId": 5,
+   "name": "",
+   "isDirected": false,
+   "distance": 30.231,
+   "time": 30.231,
+   "fixedCost": 0.0
+  },
+  {
+   "startPointId": 3,
+   "endPointId": 6,
+   "name": "",
+   "isDirected": false,
+   "distance": 24.274,
+   "time": 24.274,
+   "fixedCost": 0.0
+  },
+  {
+   "startPointId": 4,
+   "endPointId": 5,
+   "name": "",
+   "isDirected": false,
+   "distance": 28.392,
+   "time": 28.392,
+   "fixedCost": 0.0
+  },
+  {
+   "startPointId": 4,
+   "endPointId": 6,
+   "name": "",
+   "isDirected": false,
+   "distance": 20.506,
+   "time": 20.506,
+   "fixedCost": 0.0
+  },
+  {
+   "startPointId": 5,
+   "endPointId": 6,
+   "name": "",
+   "isDirected": false,
+   "distance": 48.81,
+   "time": 48.81,
+   "fixedCost": 0.0
+  }
+ ],
+ "Parameters": {
+  "timeLimit": 300.0,
+  "action": "solve",
+  "upperBound": 1000000,
+  "heuristicUsed": false,
+  "timeLimitHeuristic": 20.0,
+  "configFile": "",
+  "solverName": "CLP",
+  "printLevel": -1
+ }
+}

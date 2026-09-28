@@ -1,4 +1,4 @@
-""" Benchmark FCTP algorithms. """
+""" Benchmark CVRP algorithms. """
 
 from datetime import datetime
 import gzip
@@ -19,13 +19,13 @@ import gc
 
 from core.data_processing.data_utils import load_instance
 from core.utils.utils import flatten_dict
-from core.evaluation.benchmarking_utils import get_performance_table
+# from core.evaluation.benchmarking_utils import get_performance_table
 
-from core.cvrp_solvers.ip_grb import sol_vals
-from core.cvrp_solvers.ip_grb import cvrp
+# from core.cvrp_solvers.ip_grb import sol_vals
+# from core.cvrp_solvers.ip_grb import cvrp
 from core.ml_models.wrapper import ml_based_cvrp_reduction
 from core.utils.ml_utils import load_arc_predictor_model
-from core.cvrp_solvers.heuristics import heu_solve_HGS_VRP
+# from core.cvrp_solvers.heuristics import heu_solve_HGS_VRP
 
 
 def get_k_vals(size_thresholds, m, n):
@@ -75,424 +75,10 @@ def save_results(path, result_dict):
 
 @hydra.main(
     version_base=None,
-    config_path="configs/benchmarking",
+    config_path=r"C:\Users\bapti\Documents\VS_code_projects\CVRP_Reduce_then_Optimize\configs\benchmarking",
     config_name="config",
 )
-#     """Run benchmarking experiments."""
 
-#     seed = cfg.seed
-#     random.seed(seed)
-#     np.random.seed(seed)
-#     torch.manual_seed(seed)
-
-#     os.makedirs(cfg.solution_dir, exist_ok=True)
-
-#     method = cfg.method.name
-
-#     os.makedirs(cfg.log_dir, exist_ok=True)
-#     logger = logging.getLogger()
-#     logger.addHandler(
-#         logging.FileHandler(
-#             os.path.join(
-#                 cfg.log_dir,
-#                 f"{datetime.now().strftime('%Y%m%d_%H:%M:%S')}_benchmarking.log",
-#             ),
-#             mode="w",
-#         )
-#     )
-
-#     logger.info(f"Experiment parameters: {cfg}")
-
-#     os.environ["JULIA_NUM_THREADS"] = str(cfg.num_threads)
-#     os.environ["OPENBLAS_NUM_THREADS"] = str(cfg.num_threads)
-#         logger.info("Initializing Julia environment for TS...")
-#         ts_env = TabuSearchJuliaEnv()
-#         logger.info("Initializing Julia environment for EA...")
-#         ea_env = EvolutionaryAlgorithmJuliaEnv()
-
-#         edge_predictor_model = (
-#             load_edge_predictor_model(cfg.method.model_path, get_feature_fun=True),
-#             cfg.method.model_name,
-#         )
-
-#         decoder = cfg.decoder.name
-#         decoder_cfg = OmegaConf.to_container(cfg.decoder)
-#         decoder_env = None
-#         del decoder_cfg["name"]
-#         decoder_param_spec = "_".join(
-#             [f"{k}_{v}" for k, v in flatten_dict(decoder_cfg).items()]
-#         )
-#             decoder_cfg["tabu_in_range"] = tuple(decoder_cfg["tabu_in_range"].values())
-#             decoder_cfg["tabu_out_range"] = tuple(
-#                 decoder_cfg["tabu_out_range"].values()
-#             )
-#             decoder_cfg["seed"] = seed
-#             logger.info("Initializing Julia environment for TS...")
-#             decoder_env = TabuSearchJuliaEnv()
-#             decoder_cfg["seed"] = seed
-#             logger.info("Initializing Julia environment for EA...")
-#             decoder_env = EvolutionaryAlgorithmJuliaEnv()
-#             decoder_cfg["grb_threads"] = cfg.num_threads
-#             decoder_cfg["grb_verbosity"] = cfg.verbose
-
-#     instance_paths = [
-#         os.path.join(cfg.instance_dir, filename)
-#         for filename in os.listdir(cfg.instance_dir)
-#     ]
-#     logger.info(f"{len(instance_paths)} benchmark instances")
-
-
-#         instance_id = instance_path.split("/")[-1].split(".")[0].split("_")[-1]
-#         solution_filename = f"sol_instance_{instance_id}.pkl.gz"
-
-#         result_dict = {
-#             "instance_path": instance_path,
-#             "method": method,
-#             "experiment_config": cfg,
-#         }
-
-#         logger.info(
-#             f"Processing instance {instance_id} ({counter+1}/{len(instance_paths)})..."
-#         )
-
-#         instance = load_instance(instance_path)
-
-#             grb_cfg = OmegaConf.to_container(cfg.method)
-#             del grb_cfg["name"]
-#             param_spec = "_".join([f"{k}_{v}" for k, v in grb_cfg.items()])
-#             start = time()
-#                 model, x, _ = capacitated_fctp(
-#                     instance.supply,
-#                     instance.demand,
-#                     instance.var_costs,
-#                     instance.fix_costs,
-#                     instance.edge_capacities,
-#                 )
-#                 model, x, _ = fixed_step_fctp(
-#                     instance.supply,
-#                     instance.demand,
-#                     instance.var_costs,
-#                     instance.fix_costs,
-#                     instance.vehicle_capacities,
-#                 )
-#             else:
-#                 model, x, _ = fctp(
-#                     instance.supply,
-#                     instance.demand,
-#                     instance.var_costs,
-#                     instance.fix_costs,
-#                 )
-#             model.setParam("OutputFlag", 0)
-#             model.setParam("TimeLimit", cfg.method.grb_timeout)
-#             if cfg.num_threads is not None:
-#                 model.setParam("Threads", cfg.num_threads)
-#             model.setParam("Seed", seed)
-#             model.optimize()
-#             sol = sol_vals(x)
-#             runtime = time() - start
-#             result_dict.update(
-#                 {
-#                     "solution": sol,
-#                     "objective_value": instance.eval_sol_dict(sol),
-#                     "runtime": runtime,
-#                     "solver_runtime": model.Runtime,
-#                     "solver_status": model.Status,
-#                     "mip_gap": model.MIPGap,
-#                 }
-#             )
-#             solution_path = os.path.join(cfg.solution_dir, method, param_spec)
-#             os.makedirs(solution_path, exist_ok=True)
-#             save_results(os.path.join(solution_path, solution_filename), result_dict)
-
-#             if isinstance(instance, CapacitatedFCTP) or isinstance(
-#                 instance, FixedStepFCTP
-#                 raise NotImplementedError
-#             ea_cfg = OmegaConf.to_container(cfg.method)
-#             del ea_cfg["name"]
-#             param_spec = "_".join([f"{k}_{v}" for k, v in ea_cfg.items()])
-#             ea_cfg["seed"] = seed
-#             sol, sol_val, runtime = ea_env.run(instance, ea_cfg)
-#                 sol
-#             ), "Inconsistent objective function values"
-#             result_dict.update(
-#                 {
-#                     "solution": sol,
-#                     "objective_value": sol_val,
-#                     "runtime": runtime,
-#                 }
-#             )
-#             solution_path = os.path.join(cfg.solution_dir, method, param_spec)
-#             os.makedirs(solution_path, exist_ok=True)
-#             save_results(os.path.join(solution_path, solution_filename), result_dict)
-
-#             if isinstance(instance, CapacitatedFCTP) or isinstance(
-#                 instance, FixedStepFCTP
-#                 raise NotImplementedError
-#             ts_cfg = OmegaConf.to_container(cfg.method)
-#             del ts_cfg["name"]
-#             param_spec = "_".join([f"{k}_{v}" for k, v in flatten_dict(ts_cfg).items()])
-#             ts_cfg["tabu_in_range"] = tuple(ts_cfg["tabu_in_range"].values())
-#             ts_cfg["tabu_out_range"] = tuple(ts_cfg["tabu_out_range"].values())
-#             ts_cfg["seed"] = seed
-#             bfs = get_fctp_bfs(instance)
-#             sol, sol_val, runtime = ts_env.run(instance, bfs, ts_cfg)
-#                 sol
-#             ), "Inconsistent objective function values"
-#             result_dict.update(
-#                 {
-#                     "solution": sol,
-#                     "objective_value": sol_val,
-#                     "runtime": runtime,
-#                 }
-#             )
-#             solution_path = os.path.join(cfg.solution_dir, method, param_spec)
-#             os.makedirs(solution_path, exist_ok=True)
-#             save_results(os.path.join(solution_path, solution_filename), result_dict)
-
-#             start = time()
-#                 model, x, _ = capacitated_fctp(
-#                     instance.supply,
-#                     instance.demand,
-#                     instance.var_costs,
-#                     instance.fix_costs,
-#                     instance.edge_capacities,
-#                     relax=True,
-#                 )
-#                 model, x, _ = fixed_step_fctp(
-#                     instance.supply,
-#                     instance.demand,
-#                     instance.var_costs,
-#                     instance.fix_costs,
-#                     instance.vehicle_capacities,
-#                     relax=True,
-#                 )
-#             else:
-#                 model, x, _ = fctp(
-#                     instance.supply,
-#                     instance.demand,
-#                     instance.var_costs,
-#                     instance.fix_costs,
-#                     relax=True,
-#                 )
-#             model.setParam("OutputFlag", 0)
-#             model.setParam("TimeLimit", cfg.method.grb_timeout)
-#             if cfg.num_threads is not None:
-#                 model.setParam("Threads", cfg.num_threads)
-#             model.setParam("Seed", seed)
-#             model.optimize()
-#             sol = sol_vals(x)
-#             runtime = time() - start
-#             result_dict.update(
-#                 {
-#                     "solution": sol,
-#                     "objective_value": instance.eval_sol_dict(sol),
-#                     "runtime": runtime,
-#                     "solver_runtime": model.Runtime,
-#                     "solver_status": model.Status,
-#                 }
-#             )
-#             solution_path = os.path.join(cfg.solution_dir, method)
-#             os.makedirs(solution_path, exist_ok=True)
-#             save_results(os.path.join(solution_path, solution_filename), result_dict)
-
-#             if isinstance(instance, CapacitatedFCTP) or isinstance(
-#                 instance, FixedStepFCTP
-#                 raise NotImplementedError
-#             start = time()
-#             model, x = tp(instance.supply, instance.demand, costs=instance.var_costs)
-#             model.setParam("OutputFlag", 0)
-#             model.setParam("TimeLimit", cfg.method.grb_timeout)
-#             if cfg.num_threads is not None:
-#                 model.setParam("Threads", cfg.num_threads)
-#             model.setParam("Seed", seed)
-#             model.optimize()
-#             sol = sol_vals(x)
-#             runtime = time() - start
-#             result_dict.update(
-#                 {
-#                     "solution": sol,
-#                     "objective_value": instance.eval_sol_dict(sol),
-#                     "runtime": runtime,
-#                     "solver_runtime": model.Runtime,
-#                     "solver_status": model.Status,
-#                 }
-#             )
-#             solution_path = os.path.join(cfg.solution_dir, method)
-#             os.makedirs(solution_path, exist_ok=True)
-#             save_results(os.path.join(solution_path, solution_filename), result_dict)
-
-#             if isinstance(instance, CapacitatedFCTP) or isinstance(
-#                 instance, FixedStepFCTP
-#                 raise NotImplementedError
-#             k_vals = get_k_vals(cfg.method.size_threshold, instance.m, instance.n)
-#                 thrsh = cfg.method.size_threshold[i]
-#                 start = time()
-#                 relevant_connections = random_edges_predictor(
-#                     (instance.m, instance.n),
-#                     k=k_val,
-#                 )
-#                 num_edges_pred = np.sum(relevant_connections)
-#                 relevant_connections = add_feasible_sol_connections(
-#                     relevant_connections,
-#                     instance,
-#                     method="nwc",
-#                 )
-#                 num_edges_enriched = np.sum(relevant_connections)
-#                 sol, solver_runtime, solver_status, mip_gap = solve_reduced_problem(
-#                     instance,
-#                     relevant_connections,
-#                     decoder,
-#                     decoder_cfg,
-#                     decoder_env,
-#                     seed,
-#                 )
-#                 runtime = time() - start
-#                 result_dict_k = result_dict.copy()
-#                 result_dict_k.update(
-#                     {
-#                         "solution": sol,
-#                         "objective_value": instance.eval_sol_dict(sol),
-#                         "runtime": runtime,
-#                         "solver_runtime": solver_runtime,
-#                         "num_edges_pred": num_edges_pred,
-#                         "num_edges_enriched": num_edges_enriched,
-#                         "method_param": k_val,
-#                     }
-#                 )
-#                 if solver_status is not None:
-#                     result_dict_k["solver_status"] = solver_status
-#                 if mip_gap is not None:
-#                     result_dict_k["mip_gap"] = mip_gap
-#                 solution_path = os.path.join(
-#                     cfg.solution_dir,
-#                     method,
-#                     f"{decoder}-{decoder_param_spec}",
-#                     str(thrsh),
-#                 )
-#                 os.makedirs(solution_path, exist_ok=True)
-#                 save_results(
-#                     os.path.join(solution_path, solution_filename), result_dict_k
-#                 )
-
-#             if isinstance(instance, CapacitatedFCTP) or isinstance(
-#                 instance, FixedStepFCTP
-#                 raise NotImplementedError
-#             k_vals = get_k_vals(cfg.method.size_threshold, instance.m, instance.n)
-#                 thrsh = cfg.method.size_threshold[i]
-#                 start = time()
-#                 relevant_connections = k_shortest_edges_predictor(
-#                     instance,
-#                     k=k_val,
-#                 )
-#                 num_edges_pred = np.sum(relevant_connections)
-#                 relevant_connections = add_feasible_sol_connections(
-#                     relevant_connections,
-#                     instance,
-#                     method="lcm",
-#                 )
-#                 num_edges_enriched = np.sum(relevant_connections)
-#                 sol, solver_runtime, solver_status, mip_gap = solve_reduced_problem(
-#                     instance,
-#                     relevant_connections,
-#                     decoder,
-#                     decoder_cfg,
-#                     decoder_env,
-#                     seed,
-#                 )
-#                 runtime = time() - start
-#                 result_dict_k = result_dict.copy()
-#                 result_dict_k.update(
-#                     {
-#                         "solution": sol,
-#                         "objective_value": instance.eval_sol_dict(sol),
-#                         "runtime": runtime,
-#                         "solver_runtime": solver_runtime,
-#                         "num_edges_pred": num_edges_pred,
-#                         "num_edges_enriched": num_edges_enriched,
-#                         "method_param": k_val,
-#                     }
-#                 )
-#                 if solver_status is not None:
-#                     result_dict_k["solver_status"] = solver_status
-#                 if mip_gap is not None:
-#                     result_dict_k["mip_gap"] = mip_gap
-#                 solution_path = os.path.join(
-#                     cfg.solution_dir,
-#                     method,
-#                     f"{decoder}-{decoder_param_spec}",
-#                     str(thrsh),
-#                 )
-#                 os.makedirs(solution_path, exist_ok=True)
-#                 save_results(
-#                     os.path.join(solution_path, solution_filename), result_dict_k
-#                 )
-
-#             threshold_type = cfg.method.threshold_type
-#                 thresholds = cfg.method.size_threshold
-#                 thresholds = cfg.method.prob_threshold
-#             else:
-#                 raise ValueError
-
-#             for thrsh in thresholds:
-#                 start = time()
-#                 (
-#                     sol,
-#                     num_edges_pred,
-#                     num_edges_enriched,
-#                     solver_runtime,
-#                     solver_status,
-#                     mip_gap,
-#                 ) = ml_based_fctp_reduction(
-#                     instance,
-#                     predictor_model=edge_predictor_model[0],
-#                     threshold_type=threshold_type,
-#                     threshold=thrsh,
-#                     decoder=decoder,
-#                     decoder_cfg=decoder_cfg,
-#                     decoder_env=decoder_env,
-#                     seed=seed,
-#                 )
-#                 runtime = time() - start
-#                 result_dict_k = result_dict.copy()
-#                 result_dict_k.update(
-#                     {
-#                         "solution": sol,
-#                         "objective_value": instance.eval_sol_dict(sol),
-#                         "runtime": runtime,
-#                         "solver_runtime": solver_runtime,
-#                         "num_edges_pred": num_edges_pred,
-#                         "num_edges_enriched": num_edges_enriched,
-#                         "method_param": thrsh,
-#                         "model": edge_predictor_model[1],
-#                     }
-#                 )
-#                 if solver_status is not None:
-#                     result_dict_k["solver_status"] = solver_status
-#                 if mip_gap is not None:
-#                     result_dict_k["mip_gap"] = mip_gap
-#                 solution_path = os.path.join(
-#                     cfg.solution_dir,
-#                     method,
-#                     threshold_type,
-#                     f"{decoder}-{decoder_param_spec}",
-#                     edge_predictor_model[1],
-#                     str(thrsh),
-#                 )
-#                 os.makedirs(solution_path, exist_ok=True)
-#                 save_results(
-#                     os.path.join(solution_path, solution_filename), result_dict_k
-#                 )
-
-#     logger.info("**************** Finished benchmarking ****************")
-
-#     if cfg.summarize:
-#         logger.info("Preparing summary table...")
-#         df = get_performance_table(cfg.solution_dir)
-#         os.makedirs(cfg.result_dir, exist_ok=True)
-#         df.to_csv(os.path.join(cfg.result_dir, "benchmarking_summary.csv"))
-
-
-#     main()
 
 def main(cfg: DictConfig) -> None:
     """Run benchmarking experiments."""
@@ -558,6 +144,10 @@ def main(cfg: DictConfig) -> None:
     threshold_recall_dict = {}
     recall_standard_method_dict = {}
     test_performance_dict={}
+    dict_perf_clust = {}
+    dict_perf_clust["relative_cost_gap"] = []
+    dict_perf_clust["list_runtimes"] = []
+    dict_perf_clust["exact_runtime"] = []
     for counter, instance_path in enumerate(instance_paths):
 
         if(counter < start_index or counter > end_index):
@@ -628,10 +218,15 @@ def main(cfg: DictConfig) -> None:
         elif method == "ml-reduction":
             # Threshold type and values
             threshold_type = cfg.method.threshold_type
+            pre_cached_features = cfg.method.pre_cached_features
             if threshold_type == "size":
                 thresholds = cfg.method.size_threshold
             elif threshold_type == "prob":
                 thresholds = cfg.method.prob_threshold
+            elif threshold_type =="top_k":
+                thresholds = cfg.method.top_k_threshold
+            elif threshold_type == "cluster":
+                thresholds = cfg.method.nb_clusters
             else:
                 raise ValueError
             
@@ -643,14 +238,18 @@ def main(cfg: DictConfig) -> None:
                         enumerate(zip(instance.arc_index[0], instance.arc_index[1])))
 
             print("exact_objective_value = ", exact_objective_value)
+            features_computation_time = 0
 
             start = time()
-            node_feat, edge_attr, edge_index, _, _ = arc_predictor_model[0][1](instance)
-            features_computation_time = time() - start
+            if pre_cached_features:
+                node_feat, edge_attr, edge_index, _, _ = arc_predictor_model[0][1](instance)
+                features_computation_time = time() - start
 
-            print("features_computation_time : ", features_computation_time)
-    
-            cached_features = (node_feat, edge_attr, edge_index)
+                print("features_computation_time : ", features_computation_time)
+        
+                cached_features = (node_feat, edge_attr, edge_index)
+            else:
+                cached_features= None
             for thrsh in thresholds:
 
                 instance_log_HGS_dict = {}
@@ -662,9 +261,10 @@ def main(cfg: DictConfig) -> None:
                     solver_value,
                     solver_status,
                     solver_runtime,
-                    num_missing_arcs,
+                    inference_runtime,
                     lower_bound,
-                    completion_runtime
+                    completion_runtime,
+                    build_solver_runtime
                 ) = ml_based_cvrp_reduction(
                     instance,
                     predictor_model=arc_predictor_model[0],
@@ -672,17 +272,21 @@ def main(cfg: DictConfig) -> None:
                     threshold=thrsh,
                     decoder=decoder,
                     decoder_cfg=decoder_cfg,
-                    seed=seed,
                     heu_time=cfg.HGS_runtime,
                     time_limit=cfg.exact_time_limit,
                     cached_features=cached_features,
                     completion_heu_time=cfg.completion_heu_time,
                     instance_log_HGS_dict=instance_log_HGS_dict,
                     is_time_windows=False,
-                    pyvrp_version=cfg.pyvrp_version,
+                    pyvrp_version=exact_objective_value,
+                    dict_perf_clust=dict_perf_clust,
+                    nb_clusters=thrsh
                 )
                 print("completion_runtime : ", completion_runtime)
                 runtime = time() - start + features_computation_time
+
+
+
                 result_dict_k = result_dict.copy()
                 result_dict_k.update(
                     {
@@ -695,11 +299,12 @@ def main(cfg: DictConfig) -> None:
                         "method_param": thrsh,
                         "model": arc_predictor_model[1],
                         "solver_value": solver_value,
-                        "num_missing_arcs": num_missing_arcs,
                         "lower_bound": lower_bound,
                         "features_computation_time": features_computation_time,
                         "completion_runtime" : completion_runtime,
-                        "instance_log_HGS_dict" : instance_log_HGS_dict
+                        "instance_log_HGS_dict" : instance_log_HGS_dict,
+                        "build_solver_runtime":build_solver_runtime,
+                        "inference_runtime": inference_runtime
                     }
                 )
                 print(instance_log_HGS_dict)
@@ -715,12 +320,39 @@ def main(cfg: DictConfig) -> None:
                     str(thrsh),
                 )
                 os.makedirs(solution_path, exist_ok=True)
-                save_results(
-                    os.path.join(solution_path, solution_filename), result_dict_k
-                )
+                # save_results(
+                #     os.path.join(solution_path, solution_filename), result_dict_k
+                # )
                 logger.info(
                     f"done_{solver_runtime}_{solver_value}"
                 )
+
+    print("dict_perf_clust : ", dict_perf_clust)
+    # Extract data
+    # cost_gap = np.array(dict_perf_clust['relative_cost_gap'])
+    # runtime = np.array(dict_perf_clust['relative_runtime'])
+    # x = np.arange(len(cost_gap))
+
+    # # Create figure
+    # fig, ax1 = plt.subplots(figsize=(10, 5))
+
+    # # Left axis: cost gap
+    # ax1.plot(x, cost_gap, color="navy", marker="o", label="Relative Cost Gap")
+    # ax1.set_ylabel("Relative Cost Gap", color="navy")
+    # ax1.tick_params(axis="y", labelcolor="navy")
+
+    # # Right axis: runtime
+    # ax2 = ax1.twinx()
+    # ax2.plot(x, runtime, color="darkred", marker="s", label="Relative Runtime")
+    # ax2.set_ylabel("Relative Runtime", color="darkred")
+    # ax2.tick_params(axis="y", labelcolor="darkred")
+
+    # # Title + x-axis
+    # plt.title("Cluster Performance: Cost Gap vs Runtime")
+    # ax1.set_xlabel("Cluster Index")
+
+    # plt.tight_layout()
+    # plt.show()
 
 
             
