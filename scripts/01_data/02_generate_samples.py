@@ -3,7 +3,7 @@
 Consolidated entry point that builds Munich/CVRPLIB instances, solves them with
 the HGS heuristic, post-processes solutions, and splits resulting datasets.
 """
-
+import json
 import os
 import gzip
 import math
@@ -789,7 +789,7 @@ def generate_CVRP_LIB_instances(path, nb_clients, seed, nb_instances = 100) -> N
 
 """New generation function using the instance generator from literature to create sample: Instance and Solution"""
 
-def samples_generation_CVRP_literature(instance_path, save_path, HGS_time_limit=100):
+def samples_generation_CVRP_literature(instance_path, save_path, HGS_time_limit=100, export_as_json=False):
     cvrp_instance = parse_cvrp_literatur_instances(instance_path)
     # solution_cvrp_instance = parse_solution_file(solution_path)
 
@@ -811,18 +811,30 @@ def samples_generation_CVRP_literature(instance_path, save_path, HGS_time_limit=
         pyvrp_version=None,
     )
 
-
-
-    sample = {
-        "instance": cvrp_instance.to_dict(),
-        "solution": solution,
-        "runtime": runtime,
-        "opt_status": f"HGS_runtime{HGS_time_limit}"
-    }
     save_filename = instance_path[:-9].replace(".vrp", "")
-    with gzip.open(save_path +save_filename +".pkl.gz", "wb") as f:
-        pkl.dump(sample, f)
 
+    if export_as_json:
+        cvrp_instance.arc_index = cvrp_instance.arc_index.tolist()
+        cvrp_instance.arc_costs = cvrp_instance.arc_costs.tolist()
+        formatted_solution = []
+        for key, value in solution.items():
+            if value:
+                formatted_solution.append(key)
+        sample_json_format = {
+            "instance": cvrp_instance.to_dict(),
+            "solution": formatted_solution
+        }
+        with open(save_path+save_filename +".json", "w") as f:
+            json.dump(sample_json_format, f, indent=4)
+    else:
+        sample = {
+            "instance": cvrp_instance.to_dict(),
+            "solution": solution,
+            "runtime": runtime,
+            "opt_status": f"HGS_runtime{HGS_time_limit}"
+        }
+        with gzip.open(save_path + save_filename + ".pkl.gz", "wb") as f:
+            pkl.dump(sample, f)
 
 # ---------------------------------------------------------------------------
 # Dataset splitting
@@ -907,7 +919,7 @@ def main(data_generation_config: DictConfig) -> None:
     save_path = data_generation_config.save_path
 
     instance_path = generate_CVRP_LIB_instances(data_path, nb_clients, seed, nb_instances)
-    samples_generation_CVRP_literature(instance_path, save_path, HGS_time_limit=100)
+    samples_generation_CVRP_literature(instance_path, save_path, HGS_time_limit=100, export_as_json=True)
 
 
 
