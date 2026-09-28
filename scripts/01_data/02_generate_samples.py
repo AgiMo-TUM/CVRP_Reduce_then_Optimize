@@ -29,6 +29,8 @@ from core.cvrp_solvers.heuristics import heu_solve_HGS_VRP
 # Instance generators
 # ---------------------------------------------------------------------------
 
+base_path = str(Path(__file__).parent.parent.parent)+"/"
+
 def generate_cvrp_instance(num_nodes=20, vehicle_capacity=30, nb_vehicles=5):
     """Generate a random fully-connected CVRP instance."""
     # Create nodes (node 0 = depot, others = clients)
@@ -55,7 +57,7 @@ def generate_cvrp_instance(num_nodes=20, vehicle_capacity=30, nb_vehicles=5):
 def parse_cvrp_literatur_instances(path_instance, undirected = True):
     """Parse a CVRP literature .vrp file (directed or undirected)."""
     nb_vehicles = 100
-    with open(path_instance, "r") as f :
+    with open(base_path+path_instance, "r") as f :
         lines = f.readlines()
 
     coords = {}
@@ -762,7 +764,7 @@ def generate_CVRP_LIB_instances(path, nb_clients, seed, nb_instances = 100) -> N
 
         k = math.ceil(sumDemands/float(capacity))
 
-        f = open(pathToWrite, 'w')
+        f = open(base_path+pathToWrite, 'w')
         f.write('NAME : ' + instanceName + '\n')
         f.write('COMMENT : Generated as the XML100 dataset from the CVRPLIB\n')
         f.write('TYPE : CVRP\n')
@@ -818,13 +820,14 @@ def samples_generation_CVRP_literature(instance_path, save_path, HGS_time_limit=
         cvrp_instance.arc_costs = cvrp_instance.arc_costs.tolist()
         formatted_solution = []
         for key, value in solution.items():
-            if value:
-                formatted_solution.append(key)
+            key_as_list = list(key)
+            key_as_list.append(value)
+            formatted_solution.append(key_as_list)
         sample_json_format = {
             "instance": cvrp_instance.to_dict(),
             "solution": formatted_solution
         }
-        with open(save_path+save_filename +".json", "w") as f:
+        with open(base_path+save_path+save_filename +".json", "w") as f:
             json.dump(sample_json_format, f, indent=4)
     else:
         sample = {
@@ -833,7 +836,7 @@ def samples_generation_CVRP_literature(instance_path, save_path, HGS_time_limit=
             "runtime": runtime,
             "opt_status": f"HGS_runtime{HGS_time_limit}"
         }
-        with gzip.open(save_path + save_filename + ".pkl.gz", "wb") as f:
+        with gzip.open(base_path+save_path + save_filename + ".pkl.gz", "wb") as f:
             pkl.dump(sample, f)
 
 # ---------------------------------------------------------------------------
