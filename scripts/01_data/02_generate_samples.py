@@ -3,7 +3,7 @@
 Consolidated entry point that builds Munich/CVRPLIB instances, solves them with
 the HGS heuristic, post-processes solutions, and splits resulting datasets.
 """
-
+import json
 import os
 import gzip
 import math
@@ -39,6 +39,8 @@ def _import_cvrpTW_via_VRP_Easy():
 # Instance generators
 # ---------------------------------------------------------------------------
 
+base_path = str(Path(__file__).parent.parent.parent)+"/"
+
 def generate_cvrp_instance(num_nodes=20, vehicle_capacity=30, nb_vehicles=5):
     """Generate a random fully-connected CVRP instance."""
     # Create nodes (node 0 = depot, others = clients)
@@ -64,8 +66,9 @@ def generate_cvrp_instance(num_nodes=20, vehicle_capacity=30, nb_vehicles=5):
 # ---------------------------------------------------------------------------
 def parse_cvrp_literatur_instances(path_instance, undirected = True):
     """Parse a CVRP literature .vrp file (directed or undirected)."""
+
     # nb_vehicles = 100
-    with open(path_instance, "r") as f :
+    with open(base_path+path_instance, "r") as f :
         lines = f.readlines()
 
     coords = {}
@@ -1146,7 +1149,7 @@ def generate_CVRP_LIB_instances(path, nb_clients, seed, nb_instances = 100) -> N
 
         k = math.ceil(sumDemands/float(capacity))
 
-        f = open(pathToWrite, 'w')
+        f = open(base_path+pathToWrite, 'w')
         f.write('NAME : ' + instanceName + '\n')
         f.write('COMMENT : Generated as the XML100 dataset from the CVRPLIB\n')
         f.write('TYPE : CVRP\n')
@@ -1173,7 +1176,7 @@ def generate_CVRP_LIB_instances(path, nb_clients, seed, nb_instances = 100) -> N
 
 """New generation function using the instance generator from literature to create sample: Instance and Solution"""
 
-def samples_generation_CVRP_literature(instance_path, save_path, HGS_time_limit=100):
+def samples_generation_CVRP_literature(instance_path, save_path, HGS_time_limit=100, export_as_json=False):
     cvrp_instance = parse_cvrp_literatur_instances(instance_path)
     # solution_cvrp_instance = parse_solution_file(solution_path)
 
@@ -1195,18 +1198,31 @@ def samples_generation_CVRP_literature(instance_path, save_path, HGS_time_limit=
         pyvrp_version=None,
     )
 
-
-
-    sample = {
-        "instance": cvrp_instance.to_dict(),
-        "solution": solution,
-        "runtime": runtime,
-        "opt_status": f"HGS_runtime{HGS_time_limit}"
-    }
     save_filename = instance_path[:-9].replace(".vrp", "")
-    with gzip.open(save_path +save_filename +".pkl.gz", "wb") as f:
-        pkl.dump(sample, f)
 
+    if export_as_json:
+        cvrp_instance.arc_index = cvrp_instance.arc_index.tolist()
+        cvrp_instance.arc_costs = cvrp_instance.arc_costs.tolist()
+        formatted_solution = []
+        for key, value in solution.items():
+            key_as_list = list(key)
+            key_as_list.append(value)
+            formatted_solution.append(key_as_list)
+        sample_json_format = {
+            "instance": cvrp_instance.to_dict(),
+            "solution": formatted_solution
+        }
+        with open(base_path+save_path+save_filename +".json", "w") as f:
+            json.dump(sample_json_format, f, indent=4)
+    else:
+        sample = {
+            "instance": cvrp_instance.to_dict(),
+            "solution": solution,
+            "runtime": runtime,
+            "opt_status": f"HGS_runtime{HGS_time_limit}"
+        }
+        with gzip.open(base_path+save_path + save_filename + ".pkl.gz", "wb") as f:
+            pkl.dump(sample, f)
 
 # ---------------------------------------------------------------------------
 # Dataset splitting
